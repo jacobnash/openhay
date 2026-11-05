@@ -1,0 +1,15 @@
+[package]
+name = "openhay-auth"
+description = "Haystack HTTP authentication (HELLO / SCRAM-SHA-256 / BEARER), client and server halves"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64 = "0.22"
+hmac = "0.12"
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+sha2 = "0.10"
+rand = "0.9"
+thiserror.workspace = true

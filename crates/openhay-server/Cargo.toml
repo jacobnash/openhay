@@ -1,0 +1,24 @@
+[package]
+name = "openhay-server"
+description = "Haystack 3/4 HTTP server: implement one trait, get the full op surface, auth and content negotiation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+libhaystack.workspace = true
+openhay-codec.workspace = true
+openhay-auth.workspace = true
+axum = "0.8"
+tokio.workspace = true
+thiserror.workspace = true
+
+
+
+chrono = "0.4"
+chrono-tz = "0.10"
+
+[dev-dependencies]
+openhay-client.workspace = true
+libhaystack.workspace = true

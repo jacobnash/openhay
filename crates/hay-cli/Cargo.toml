@@ -1,0 +1,19 @@
+[package]
+name = "hay-cli"
+description = "hay: convert Haystack formats, query any Haystack server, or serve a Trio/Zinc file as one"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "hay"
+path = "src/main.rs"
+
+[dependencies]
+libhaystack.workspace = true
+openhay-codec.workspace = true
+openhay-client.workspace = true
+openhay-server.workspace = true
+tokio.workspace = true
+clap = { version = "4", features = ["derive", "env"] }

@@ -1,0 +1,15 @@
+[package]
+name = "openhay-codec"
+description = "Haystack 3 + 4 wire formats: Zinc, JSON v3, Hayson (JSON v4), Trio, CSV"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+libhaystack.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
