@@ -100,5 +100,5 @@ Still open:
 
 ## Related
 
-- `jacobnash/timberdoodle`: a building data platform that will serve its records through `openhay-server`
-- `jacobnash/fbf`: BACnet/Modbus → MQTT
+- [`jacobnash/baler`](https://github.com/jacobnash/baler): the building data platform (formerly Timberdoodle); serves the Haystack API with openhay
+- [`jacobnash/windrow`](https://github.com/jacobnash/windrow): BACnet/Modbus → MQTT (formerly FBF)
