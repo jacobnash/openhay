@@ -185,10 +185,19 @@ impl<B: Backend> Server<B> {
                     .unwrap_or_default();
                 // Unknown users get throwaway credentials so the handshake
                 // looks identical and fails at the proof (no user enumeration).
-                let creds = users
-                    .get(&user)
-                    .cloned()
-                    .unwrap_or_else(|| ScramCredentials::new_random(&random_token(16)));
+                let creds = users.get(&user).cloned().unwrap_or_else(|| {
+                    // Random bytes, not a PBKDF2 run: spraying HELLOs for
+                    // made-up usernames must not cost the server hashing.
+                    let mut salt = [0u8; 16];
+                    let mut salted = [0u8; 32];
+                    rand_fill(&mut salt);
+                    rand_fill(&mut salted);
+                    ScramCredentials::from_salted_password(
+                        &salted,
+                        &salt,
+                        ScramCredentials::DEFAULT_ITERATIONS,
+                    )
+                });
                 let token = random_token(18);
                 let mut hs = self.handshakes.lock().unwrap();
                 hs.retain(|_, h| h.created.elapsed() < Duration::from_secs(120));
@@ -260,6 +269,13 @@ impl<B: Backend> Server<B> {
                 "Bearer".into()
             }))),
         }
+    }
+}
+
+fn rand_fill(buf: &mut [u8]) {
+    let hex = random_token(buf.len());
+    for (i, b) in buf.iter_mut().enumerate() {
+        *b = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).expect("hex");
     }
 }
 

@@ -171,3 +171,15 @@ fn special_numbers_survive_every_format() {
         assert_eq!(num("ninf"), f64::NEG_INFINITY, "{f:?}");
     }
 }
+
+#[test]
+fn hayson_utc_datetime_always_carries_tz() {
+    let mut d = Dict::new();
+    d.insert(
+        "ts".into(),
+        Value::make_datetime_from_iso("2024-01-02T18:45:00Z").unwrap(),
+    );
+    let text = encode_grid(Format::Hayson, &Grid::make_from_dicts(vec![d])).unwrap();
+    assert!(text.contains(r#""tz":"UTC""#), "{text}");
+    assert!(decode_grid(Format::Hayson, &text).is_ok());
+}

@@ -62,6 +62,15 @@ pub fn encode_value(v: &Value) -> J {
                 .collect(),
         ),
         Value::Grid(g) => encode_grid(g),
+        Value::DateTime(_) => {
+            // libhaystack omits `tz` for UTC (Hayson allows that), but some
+            // clients (e.g. phable) index it unconditionally - always send it.
+            let mut j = serde_json::to_value(v).unwrap_or(J::Null);
+            if let J::Object(o) = &mut j {
+                o.entry("tz").or_insert_with(|| J::String("UTC".into()));
+            }
+            j
+        }
         other => serde_json::to_value(other).unwrap_or(J::Null),
     }
 }

@@ -40,16 +40,40 @@ pub fn b64url(data: &[u8]) -> String {
     URL_SAFE_NO_PAD.encode(data)
 }
 
+/// Decode base64url, leniently: the Haystack spec mandates base64url
+/// without padding, but some clients in the wild (e.g. phable) send standard
+/// base64 (`+`/`/`), with or without padding. Both alphabets are accepted.
 pub fn b64url_decode(s: &str) -> Result<Vec<u8>> {
+    let normalized: String = s
+        .trim()
+        .trim_end_matches('=')
+        .chars()
+        .map(|c| match c {
+            '+' => '-',
+            '/' => '_',
+            c => c,
+        })
+        .collect();
     URL_SAFE_NO_PAD
-        .decode(s.trim_end_matches('='))
+        .decode(normalized)
         .map_err(|e| AuthError::Malformed(format!("base64url: {e}")))
 }
 
+/// True when `b64url(data)` uses no character outside the shared subset of
+/// the base64url and standard base64 alphabets, i.e. no `-` or `_`. Such a
+/// string decodes identically under either alphabet.
+fn alphabet_neutral(data: &[u8]) -> bool {
+    !b64url(data).contains(['-', '_'])
+}
+
+/// `bytes` random bytes as lowercase hex. Used for nonces and opaque tokens
+/// (handshakeToken, authToken, watch ids): hex survives every client's
+/// header parser, where base64url's `-`/`_` do not (phable's regexes drop
+/// them).
 pub fn random_token(bytes: usize) -> String {
     let mut buf = vec![0u8; bytes];
     rand::rng().fill_bytes(&mut buf);
-    b64url(&buf)
+    buf.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// Parse an `Authorization` / `WWW-Authenticate` / `Authentication-Info` value
@@ -193,13 +217,12 @@ impl ScramClient {
         if !r.starts_with(&self.nonce) {
             return Err(AuthError::Nonce);
         }
-        let salt = STANDARD
-            .decode(
-                attrs
-                    .get(&'s')
-                    .ok_or_else(|| AuthError::Malformed("missing s".into()))?,
-            )
-            .map_err(|e| AuthError::Malformed(format!("salt: {e}")))?;
+        let salt = b64url_decode(
+            attrs
+                .get(&'s')
+                .ok_or_else(|| AuthError::Malformed("missing s".into()))?,
+        )
+        .map_err(|e| AuthError::Malformed(format!("salt: {e}")))?;
         let iterations: u32 = attrs
             .get(&'i')
             .and_then(|i| i.parse().ok())
@@ -225,9 +248,7 @@ impl ScramClient {
         let v = attrs
             .get(&'v')
             .ok_or_else(|| AuthError::Malformed("missing v".into()))?;
-        let got = STANDARD
-            .decode(v)
-            .map_err(|e| AuthError::Malformed(format!("v: {e}")))?;
+        let got = b64url_decode(v).map_err(|e| AuthError::Malformed(format!("v: {e}")))?;
         match &self.expected_server_sig {
             Some(exp) if *exp == got => Ok(()),
             _ => Err(AuthError::BadServerSignature),
@@ -268,14 +289,35 @@ impl ScramServerState {
 
     /// Start the server side once credentials are known. Returns the state
     /// and the (unencoded) server-first message.
+    ///
+    /// The server nonce is chosen so that both server messages this exchange
+    /// will send (server-first now, server-final later - fully determined by
+    /// the nonce, since Haystack clients always send `c=biws`) base64url-
+    /// encode without `-` or `_`. The wire stays spec base64url, but is then
+    /// also valid standard base64, so clients that decode the wrong alphabet
+    /// still interoperate. Costs one HMAC per attempt, ~1ms total typically.
     pub fn start(client_first: &str, creds: &ScramCredentials) -> Result<(Self, String)> {
         let (username, client_nonce, client_first_bare) = Self::parse_client_first(client_first)?;
-        let combined_nonce = format!("{client_nonce}{}", random_token(18));
-        let server_first = format!(
-            "r={combined_nonce},s={},i={}",
-            STANDARD.encode(&creds.salt),
-            creds.iterations
-        );
+        let salt_b64 = STANDARD.encode(&creds.salt);
+        let mut chosen = None;
+        for _ in 0..20_000 {
+            let nonce = format!("{client_nonce}{}", random_token(18));
+            let server_first = format!("r={nonce},s={salt_b64},i={}", creds.iterations);
+            let auth_message = format!("{client_first_bare},{server_first},c=biws,r={nonce}");
+            let server_final = format!(
+                "v={}",
+                STANDARD.encode(hmac(&creds.server_key, auth_message.as_bytes()))
+            );
+            let clean = alphabet_neutral(server_first.as_bytes())
+                && alphabet_neutral(server_final.as_bytes());
+            if clean || chosen.is_none() {
+                chosen = Some((nonce, server_first));
+            }
+            if clean {
+                break;
+            }
+        }
+        let (combined_nonce, server_first) = chosen.expect("loop runs at least once");
         Ok((
             Self {
                 username,
@@ -297,9 +339,7 @@ impl ScramServerState {
         if attrs.get(&'r') != Some(&self.combined_nonce) {
             return Err(AuthError::Nonce);
         }
-        let proof = STANDARD
-            .decode(proof_b64)
-            .map_err(|_| AuthError::BadProof)?;
+        let proof = b64url_decode(proof_b64).map_err(|_| AuthError::BadProof)?;
         let auth_message = format!(
             "{},{},{}",
             self.client_first_bare, self.server_first, without_proof
@@ -369,6 +409,50 @@ mod tests {
         let (state, sf) = ScramServerState::start(&c.client_first(), &creds).unwrap();
         let cf = c.client_final(&sf, "wrong").unwrap();
         assert_eq!(state.finish(&cf, &creds), Err(AuthError::BadProof));
+    }
+
+    #[test]
+    fn decode_accepts_both_alphabets_and_padding() {
+        let raw = [0xfbu8, 0xff, 0xbf, 0x00, 0x10];
+        let url = b64url(&raw);
+        let std = STANDARD.encode(raw);
+        assert!(url.contains(['-', '_']) && std.contains(['+', '/']));
+        assert_eq!(b64url_decode(&url).unwrap(), raw);
+        assert_eq!(b64url_decode(&std).unwrap(), raw);
+        assert_eq!(b64url_decode(std.trim_end_matches('=')).unwrap(), raw);
+    }
+
+    #[test]
+    fn server_messages_are_alphabet_neutral() {
+        let creds = ScramCredentials::new_random("pw");
+        for _ in 0..50 {
+            let mut c = ScramClient::new("user@example.com");
+            let (state, sf) = ScramServerState::start(&c.client_first(), &creds).unwrap();
+            assert!(alphabet_neutral(sf.as_bytes()), "{sf}");
+            let cf = c.client_final(&sf, "pw").unwrap();
+            let sfin = state.finish(&cf, &creds).unwrap();
+            assert!(alphabet_neutral(sfin.as_bytes()), "{sfin}");
+            c.verify_server_final(&sfin).unwrap();
+        }
+    }
+
+    #[test]
+    fn server_accepts_unpadded_standard_base64_proof() {
+        // phable sends the client proof as standard base64 without padding.
+        let creds = ScramCredentials::new_random("pw");
+        let mut c = ScramClient::new("u");
+        let (state, sf) = ScramServerState::start(&c.client_first(), &creds).unwrap();
+        let cf = c.client_final(&sf, "pw").unwrap();
+        let unpadded = cf.trim_end_matches('=');
+        assert_ne!(unpadded, cf, "proof should normally carry padding");
+        state.finish(unpadded, &creds).unwrap();
+    }
+
+    #[test]
+    fn tokens_are_hex() {
+        let t = random_token(16);
+        assert_eq!(t.len(), 32);
+        assert!(t.chars().all(|c| c.is_ascii_hexdigit()));
     }
 
     #[test]

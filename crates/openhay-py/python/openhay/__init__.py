@@ -287,13 +287,12 @@ def to_hayson(v: Any) -> Any:
     if isinstance(v, datetime):
         if v.tzinfo is None:
             raise ValueError("Haystack DateTime must be timezone-aware")
-        out = {"_kind": "dateTime", "val": v.isoformat()}
         name = _tz_name(v)
-        if name != "UTC":
-            out["tz"] = name
-        else:
-            out["val"] = v.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-        return out
+        if name == "UTC":
+            # tz is optional for UTC in Hayson, but always sent: some clients
+            # (e.g. phable) read it unconditionally.
+            return {"_kind": "dateTime", "val": v.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"), "tz": "UTC"}
+        return {"_kind": "dateTime", "val": v.isoformat(), "tz": name}
     if isinstance(v, date):
         return {"_kind": "date", "val": v.isoformat()}
     if isinstance(v, time):
