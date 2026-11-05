@@ -25,10 +25,20 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-/// Server configuration.
+/// Validates an externally issued bearer token (OAuth2/OIDC access token,
+/// API key, JWT, ...) and returns the principal it identifies, or `None`.
+/// Checked for both `Authorization: Bearer <token>` (OAuth style) and
+/// `Authorization: BEARER authToken=<token>` (Haystack style).
+pub type TokenValidator = Arc<dyn Fn(&str) -> Option<String> + Send + Sync>;
+
+/// Server configuration. Auth is on when either `users` (Haystack SCRAM
+/// login) or `token_validator` (OAuth/API-key bearer tokens) is set; both
+/// can be on at once.
 pub struct Config {
-    /// `None` disables auth (local tools, tests).
+    /// SCRAM users. `None` with no `token_validator` disables auth.
     pub users: Option<HashMap<String, ScramCredentials>>,
+    /// External bearer-token check (OAuth2 / OIDC / API keys).
+    pub token_validator: Option<TokenValidator>,
     /// Which JSON to send for a bare `Accept: application/json` when the
     /// request itself didn't reveal a flavor.
     pub json_flavor: Format,
@@ -41,6 +51,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             users: None,
+            token_validator: None,
             json_flavor: Format::Hayson,
             token_ttl: Duration::from_secs(12 * 3600),
             server_name: "openhay".into(),
@@ -135,9 +146,11 @@ fn unauthorized(www: Option<String>) -> Response {
 
 impl<B: Backend> Server<B> {
     fn authenticate(&self, headers: &HeaderMap) -> AuthOutcome {
-        let Some(users) = &self.config.users else {
+        if self.config.users.is_none() && self.config.token_validator.is_none() {
             return AuthOutcome::Ok(None);
-        };
+        }
+        let empty = HashMap::new();
+        let users = self.config.users.as_ref().unwrap_or(&empty);
         let raw = headers
             .get(header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
@@ -145,17 +158,26 @@ impl<B: Backend> Server<B> {
         let (scheme, params) = parse_auth_header(raw);
         match scheme.as_deref() {
             Some("BEARER") => {
-                let tok = params.get("authToken").cloned().unwrap_or_default();
-                let mut tokens = self.tokens.lock().unwrap();
-                let now = Instant::now();
-                tokens.retain(|_, (_, exp)| *exp > now);
-                if tokens.contains_key(&tok) {
-                    AuthOutcome::Ok(None)
-                } else {
-                    AuthOutcome::Respond(unauthorized(None))
+                // Haystack style `BEARER authToken=x`, or OAuth style `Bearer x`
+                // (the token itself may contain '=' padding, so take it raw).
+                let tok = match params.get("authToken") {
+                    Some(t) => t.clone(),
+                    None => raw.trim()[6..].trim().to_string(),
+                };
+                {
+                    let mut tokens = self.tokens.lock().unwrap();
+                    let now = Instant::now();
+                    tokens.retain(|_, (_, exp)| *exp > now);
+                    if tokens.contains_key(&tok) {
+                        return AuthOutcome::Ok(None);
+                    }
+                }
+                match &self.config.token_validator {
+                    Some(v) if !tok.is_empty() && v(&tok).is_some() => AuthOutcome::Ok(None),
+                    _ => AuthOutcome::Respond(unauthorized(None)),
                 }
             }
-            Some("HELLO") => {
+            Some("HELLO") if self.config.users.is_some() => {
                 let user = params
                     .get("username")
                     .and_then(|u| b64url_decode(u).ok())
@@ -232,7 +254,11 @@ impl<B: Backend> Server<B> {
                     }
                 }
             }
-            _ => AuthOutcome::Respond(unauthorized(Some("SCRAM hash=SHA-256".into()))),
+            _ => AuthOutcome::Respond(unauthorized(Some(if self.config.users.is_some() {
+                "SCRAM hash=SHA-256".into()
+            } else {
+                "Bearer".into()
+            }))),
         }
     }
 }

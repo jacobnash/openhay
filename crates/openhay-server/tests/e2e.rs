@@ -90,6 +90,40 @@ async fn auth_required_and_scram_login() {
 }
 
 #[tokio::test]
+async fn oauth_bearer_alongside_scram() {
+    let mut users = HashMap::new();
+    users.insert("admin".to_string(), ScramCredentials::new_random("pencil"));
+    let validator: openhay_server::TokenValidator =
+        Arc::new(|t: &str| (t == "oauth-access-token==").then(|| "svc".to_string()));
+    let cfg = Config {
+        users: Some(users),
+        token_validator: Some(validator),
+        ..Config::default()
+    };
+    let server = Arc::new(Server::new(MemBackend::new(site()), cfg));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum_serve(listener, server).await });
+    let base = format!("http://{addr}/api/demo");
+
+    // OAuth-style and Haystack-style headers both accepted for an external token
+    let c = Client::new(&base).with_bearer("oauth-access-token==");
+    assert_eq!(c.read("site", None).await.unwrap().len(), 1);
+    let c = Client::new(&base).with_token("oauth-access-token==");
+    assert_eq!(c.read("site", None).await.unwrap().len(), 1);
+    // bad token rejected
+    let c = Client::new(&base).with_bearer("nope");
+    assert!(matches!(
+        c.read("site", None).await,
+        Err(ClientError::Status { status: 401, .. })
+    ));
+    // SCRAM still works on the same server
+    let mut c = Client::new(&base);
+    c.login("admin", "pencil").await.unwrap();
+    assert_eq!(c.read("site", None).await.unwrap().len(), 1);
+}
+
+#[tokio::test]
 async fn read_filter_with_ref_paths() {
     let base = start(false).await;
     for fmt in [Format::Zinc, Format::Json3, Format::Hayson] {

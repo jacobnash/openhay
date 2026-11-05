@@ -28,6 +28,9 @@ pub struct Client {
     /// Ends with `/`, e.g. `http://host/api/demo/`.
     base: String,
     token: Option<String>,
+    /// Send `Authorization: Bearer <token>` (OAuth2 / API key) instead of
+    /// Haystack's `BEARER authToken=<token>`.
+    oauth_style: bool,
     /// Format used for request bodies and asked for in `Accept`.
     pub format: Format,
 }
@@ -44,12 +47,23 @@ impl Client {
             http: reqwest::Client::new(),
             base,
             token: None,
+            oauth_style: false,
             format: Format::Zinc,
         }
     }
 
+    /// Use a Haystack `authToken` obtained elsewhere.
     pub fn with_token(mut self, token: &str) -> Self {
         self.token = Some(token.to_string());
+        self.oauth_style = false;
+        self
+    }
+
+    /// Use an OAuth2 / OIDC access token or API key, sent as
+    /// `Authorization: Bearer <token>`.
+    pub fn with_bearer(mut self, token: &str) -> Self {
+        self.token = Some(token.to_string());
+        self.oauth_style = true;
         self
     }
 
@@ -165,6 +179,7 @@ impl Client {
             .cloned()
             .ok_or_else(|| ClientError::Auth("no authToken".into()))?;
         self.token = Some(token);
+        self.oauth_style = false;
         Ok(())
     }
 
@@ -182,7 +197,12 @@ impl Client {
             .header("Accept", self.format.mime())
             .body(body);
         if let Some(t) = &self.token {
-            rb = rb.header("Authorization", format!("BEARER authToken={t}"));
+            let value = if self.oauth_style {
+                format!("Bearer {t}")
+            } else {
+                format!("BEARER authToken={t}")
+            };
+            rb = rb.header("Authorization", value);
         }
         let r = rb.send().await?;
         let status = r.status();

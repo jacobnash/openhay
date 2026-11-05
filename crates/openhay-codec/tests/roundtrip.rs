@@ -149,3 +149,25 @@ fn zinc_meta_and_empty_grids_roundtrip() {
     .unwrap();
     assert!(back.rows.is_empty());
 }
+
+#[test]
+fn special_numbers_survive_every_format() {
+    let mut d = Dict::new();
+    d.insert("id".into(), Value::make_ref("x"));
+    d.insert("nan".into(), Value::make_number(f64::NAN));
+    d.insert("inf".into(), Value::make_number(f64::INFINITY));
+    d.insert("ninf".into(), Value::make_number(f64::NEG_INFINITY));
+    let g = Grid::make_from_dicts(vec![d]);
+    for f in [Format::Zinc, Format::Json3, Format::Hayson, Format::Trio] {
+        let text = encode_grid(f, &g).unwrap();
+        let back = decode_grid(f, &text).unwrap_or_else(|e| panic!("{f:?}: {e}\n{text}"));
+        let r = &back.rows[0];
+        let num = |k: &str| match r.get(k) {
+            Some(Value::Number(n)) => n.value,
+            other => panic!("{f:?} {k}: {other:?}\n{text}"),
+        };
+        assert!(num("nan").is_nan(), "{f:?}");
+        assert_eq!(num("inf"), f64::INFINITY, "{f:?}");
+        assert_eq!(num("ninf"), f64::NEG_INFINITY, "{f:?}");
+    }
+}

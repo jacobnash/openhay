@@ -6,6 +6,7 @@ members = [
     "crates/openhay-client",
     "crates/openhay-server",
     "crates/hay-cli",
+    "crates/openhay-py",
 ]
 
 [workspace.package]

@@ -1,0 +1,21 @@
+[package]
+name = "openhay-py"
+description = "Python bindings for openhay (pip install openhay)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+libhaystack.workspace = true
+openhay-codec.workspace = true
+openhay-auth.workspace = true
+openhay-client.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+pyo3 = { version = "0.30", features = ["extension-module", "abi3-py310"] }

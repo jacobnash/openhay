@@ -115,13 +115,25 @@ impl ScramCredentials {
     pub const DEFAULT_ITERATIONS: u32 = 10_000;
 
     pub fn derive(password: &str, salt: &[u8], iterations: u32) -> Self {
-        let salted = salted_password(password, salt, iterations);
-        let client_key = hmac(&salted, b"Client Key");
+        Self::from_salted_password(
+            &salted_password(password, salt, iterations),
+            salt,
+            iterations,
+        )
+    }
+
+    /// Build credentials from an already-computed SCRAM SaltedPassword,
+    /// i.e. `PBKDF2-HMAC-SHA256(password, salt, iterations)` with a 32-byte
+    /// output. Any system that already stores passwords that way (Django's
+    /// `pbkdf2_sha256`, Timberdoodle's `salt$dk`, ...) can serve SCRAM logins
+    /// for existing users without a password reset.
+    pub fn from_salted_password(salted: &[u8], salt: &[u8], iterations: u32) -> Self {
+        let client_key = hmac(salted, b"Client Key");
         Self {
             salt: salt.to_vec(),
             iterations,
             stored_key: Sha256::digest(&client_key).to_vec(),
-            server_key: hmac(&salted, b"Server Key"),
+            server_key: hmac(salted, b"Server Key"),
         }
     }
 
@@ -338,6 +350,16 @@ mod tests {
         let cf = c.client_final(&sf, "s3cret").unwrap();
         let sfin = state.finish(&cf, &creds).unwrap();
         c.verify_server_final(&sfin).unwrap();
+    }
+
+    #[test]
+    fn from_salted_matches_derive() {
+        let salt = b"0123456789abcdef";
+        let salted = salted_password("pw", salt, 1000);
+        assert_eq!(
+            ScramCredentials::from_salted_password(&salted, salt, 1000),
+            ScramCredentials::derive("pw", salt, 1000)
+        );
     }
 
     #[test]

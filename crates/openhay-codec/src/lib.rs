@@ -10,6 +10,7 @@
 //!   never branch on wire format themselves.
 
 pub mod csv;
+pub mod hayson;
 pub mod json3;
 pub mod zinc;
 
@@ -138,15 +139,7 @@ pub fn decode_grid(format: Format, text: &str) -> Result<Grid> {
             ))),
         },
         Format::Json3 => json3::decode_grid(text),
-        Format::Hayson => {
-            let v: Value = serde_json::from_str(text)?;
-            match v {
-                Value::Grid(g) => Ok(*g),
-                other => Err(CodecError::Invalid(format!(
-                    "expected hayson grid, got {other:?}"
-                ))),
-            }
-        }
+        Format::Hayson => hayson::decode_grid(text),
         Format::Trio => {
             TrioReader::grid_from_str(text).map_err(|e| CodecError::Trio(e.to_string()))
         }
@@ -164,7 +157,7 @@ pub fn encode_grid(format: Format, grid: &Grid) -> Result<String> {
     match format {
         Format::Zinc => zinc::encode_grid(grid),
         Format::Json3 => Ok(json3::encode_grid(grid).to_string()),
-        Format::Hayson => Ok(serde_json::to_string(grid)?),
+        Format::Hayson => Ok(hayson::encode_grid(grid).to_string()),
         Format::Trio => {
             let mut w = TrioWriter::new();
             for row in &grid.rows {

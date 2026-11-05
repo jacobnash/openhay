@@ -1,0 +1,16 @@
+[build-system]
+requires = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name = "openhay"
+description = "Project Haystack 3 + 4 for Python: Zinc, JSON v3, Hayson, Trio, CSV, SCRAM auth and a client - Rust core, no Fantom"
+license = { text = "BSD-3-Clause" }
+requires-python = ">=3.10"
+classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3"]
+dynamic = ["version"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "openhay._native"
+features = ["pyo3/extension-module"]
