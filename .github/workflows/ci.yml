@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Runners ship rustup; add the two components the gate below needs.
+      - run: rustup component add rustfmt clippy
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "maturin>=1.5,<2" pytest phable
+      # The wheel under test, built the way users get it (abi3, release).
+      - run: maturin build --release -m crates/openhay-py/Cargo.toml --out dist
+      - run: pip install dist/openhay-*.whl
+      # `hay serve` is the live server the Python and phable interop tests run against.
+      - run: cargo build -p hay-cli
+      - run: pytest crates/openhay-py/tests -ra

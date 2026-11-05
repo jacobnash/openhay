@@ -183,7 +183,7 @@ async fn point_write_priority_and_watch() {
     let c = Client::new(&start(false).await);
     let p2 = Ref::make("p2", None);
     let (wid, initial) = c
-        .watch_sub("test", &[p2.clone()], Some(30.0))
+        .watch_sub("test", std::slice::from_ref(&p2), Some(30.0))
         .await
         .unwrap();
     assert_eq!(initial.len(), 1);
@@ -205,7 +205,7 @@ async fn point_write_priority_and_watch() {
     // releasing level 8 falls back to level 16
     c.point_write(&p2, 8, None, "operator").await.unwrap();
     let rec = c
-        .read_ids(&[p2.clone()])
+        .read_ids(std::slice::from_ref(&p2))
         .await
         .unwrap()
         .pop()
