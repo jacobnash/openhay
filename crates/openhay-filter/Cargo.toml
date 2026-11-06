@@ -1,0 +1,12 @@
+[package]
+name = "openhay-filter"
+description = "Haystack filters: parser and evaluator with the reference semantics (paths through Ref lists, typed comparisons, ^symbols, Xeto spec names)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+libhaystack.workspace = true
+openhay-codec.workspace = true
+thiserror.workspace = true

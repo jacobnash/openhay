@@ -906,6 +906,16 @@ version = "0.1.0"
 dependencies = [
  "libhaystack",
  "openhay-codec",
+ "openhay-filter",
+ "thiserror",
+]
+
+[[package]]
+name = "openhay-filter"
+version = "0.1.0"
+dependencies = [
+ "libhaystack",
+ "openhay-codec",
  "thiserror",
 ]
 
@@ -935,6 +945,7 @@ dependencies = [
  "openhay-client",
  "openhay-codec",
  "openhay-defs",
+ "openhay-filter",
  "thiserror",
  "tokio",
 ]

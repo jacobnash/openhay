@@ -12,6 +12,7 @@ need to talk to real servers and to *be* one.
 | `openhay-codec` | One `Format` enum covering **Zinc, JSON v3** (SkySpark 3 / older nhaystack prefixed strings), **Hayson** (JSON v4), **Trio** and CSV. Also MIME negotiation and format sniffing. |
 | `openhay-auth` | Haystack auth: `HELLO` → SCRAM-SHA-256 → `BEARER authToken`. Client and server halves, checked against the RFC 7677 test vector. `ScramCredentials::from_salted_password` serves SCRAM straight from existing PBKDF2-SHA256 password hashes, so no password reset is needed. |
 | `openhay-client` | Async client for SkySpark, Haxall, nhaystack or anything else: login, `about`, `read` (filter or ids), `nav`, `hisRead`, `hisWrite`, `pointWrite` (+ priority array), `watchSub`/`Poll`/`Unsub`, `invokeAction`. |
+| `openhay-filter` | Haystack filters with the reference semantics: typed comparisons (no matches on missing tags, other kinds or other units), paths through Refs, Ref lists, nested Dicts and DateTime `date`/`time`/`tz`, `^symbol` terms, Xeto spec names, hex/`h:mm` literals and `//` comments. Pluggable `Resolver` for whatever store holds the records. |
 | `openhay-defs` | The official Project Haystack 4.0.0 defs namespace (`ph`, `phScience`, `phIoT`, `phIct`; 719 defs), bundled, plus the `defs`/`libs`/`filetypes` ops and a filter evaluator that knows the namespace (`lib==^lib:phIoT`). |
 | `openhay-server` | Implement one `Backend` trait over your storage and get the whole op surface. It serves both `/api/{op}` (Haxall layout) and `/api/{project}/{op}` (SkySpark layout), with SCRAM auth, content negotiation, Haystack error grids, and **server-managed watches with bounded memory**. `MemBackend` is a complete in-memory implementation. |
 | `openhay-py` | Python package `openhay` (PyO3, abi3 wheel for Python 3.10+). It includes value types, `decode_grid`/`encode_grid` for every format, a blocking `Client`, the SCRAM server half for any Python web stack, the bundled defs (`oh.defs("libs")`) and an in-memory filter (`oh.filter_rows`). |
@@ -84,16 +85,19 @@ Roadmap:
 - [ ] Xeto: parser and `xeto → anything` converter (Trio defs, JSON Schema, SHACL, TS/Python types)
 - [x] Conformance suite against Haxall in Docker (runs in [Baler](https://github.com/jacobnash/Baler)'s CI: every op, every format, openhay and phable as clients)
 
+## Conformance
+
+Every codec and the filter engine are tested against **haxall's own test suite**: 219 cases
+(Zinc, Trio, filter parsing and evaluation) whose expected results were produced by running
+haxall 4.0.6 itself. They ship in the Python package as `openhay.vectors`, so any other Haystack
+implementation can run them too. openhay matches the reference on all of them.
+
+The Zinc and Trio readers and the filter engine are openhay's own. libhaystack's versions
+clamped large exponents to `i64::MAX`, dropped rows after nested grids, truncated unquoted Trio
+values (`13 main st` became `13`) and compared missing tags and mixed kinds. libhaystack still
+provides the value types, units and the Hayson/Zinc scalar writers we haven't replaced.
+
 ## Known limitations
-
-Fixed here, but worth reporting upstream to libhaystack 4.1:
-
-- Its Zinc grid encoder writes grid meta on the line after `ver:"3.0"`, which no Zinc parser accepts.
-  `openhay-codec::zinc` frames grids itself.
-- Its Hayson encoder writes unitless NaN/±INF as JSON `null`, which silently drops readings, and its decoder
-  rejects `"val":"NaN"`. `openhay-codec::hayson` handles both directions.
-
-Still open:
 
 - Numbers whose unit isn't in the Haystack unit database lose the unit on decode. `libhaystack::Number`
   only holds database units.

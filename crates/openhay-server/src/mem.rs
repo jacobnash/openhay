@@ -2,10 +2,6 @@
 //! working Haystack server. Used by `hay serve`, tests and demos.
 
 use crate::backend::{Backend, HisItem, OpError, OpResult, PointWrite};
-use libhaystack::defs::namespace::DEFAULT_NS;
-use libhaystack::filter::eval::EvalContext;
-use libhaystack::filter::path::Path;
-use libhaystack::filter::{Eval, Filter, PathResolver};
 use libhaystack::val::{DateTime, Dict, Grid, HaystackDict, Ref, Value};
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -35,32 +31,9 @@ pub fn rec_id(d: &Dict) -> Option<String> {
 
 struct Resolver<'a>(&'a HashMap<String, Dict>);
 
-impl PathResolver for Resolver<'_> {
-    fn resolve_for(&self, root: &Dict, path: &Path) -> Value {
-        let mut cur = Value::Dict(root.clone());
-        for seg in path.iter() {
-            let dict = match &cur {
-                Value::Dict(d) => d.clone(),
-                Value::Ref(r) => match self.0.get(r.value()) {
-                    Some(d) => d.clone(),
-                    None => return Value::Null,
-                },
-                _ => return Value::Null,
-            };
-            cur = dict.get(&seg.to_string()).cloned().unwrap_or(Value::Null);
-            if cur.is_null() {
-                break;
-            }
-        }
-        cur
-    }
-
-    fn resolve(&self, _path: &Path) -> Value {
-        Value::Null
-    }
-
-    fn resolve_ref(&self, reference: &Ref) -> Option<Dict> {
-        self.0.get(reference.value()).cloned()
+impl openhay_filter::Resolver for Resolver<'_> {
+    fn deref(&self, r: &Ref) -> Option<Dict> {
+        self.0.get(r.value()).cloned()
     }
 }
 
@@ -133,15 +106,15 @@ impl Backend for MemBackend {
     }
 
     async fn read_filter(&self, filter: &str, limit: Option<usize>) -> OpResult<Vec<Dict>> {
-        let f =
-            Filter::try_from(filter).map_err(|e| OpError::BadRequest(format!("filter: {e}")))?;
+        let f = openhay_filter::Filter::parse(filter)
+            .map_err(|e| OpError::BadRequest(e.to_string()))?;
         let s = self.state.read().unwrap();
         let res = Resolver(&s.recs);
         let max = limit.unwrap_or(usize::MAX);
         Ok(s.order
             .iter()
             .filter_map(|id| s.recs.get(id))
-            .filter(|d| f.eval(&EvalContext::make(d, &DEFAULT_NS, &res)))
+            .filter(|d| f.matches(d, &res))
             .take(max)
             .cloned()
             .collect())

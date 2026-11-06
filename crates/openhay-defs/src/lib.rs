@@ -8,9 +8,6 @@
 //! ```
 
 use libhaystack::defs::namespace::Namespace;
-use libhaystack::filter::eval::EvalContext;
-use libhaystack::filter::path::Path;
-use libhaystack::filter::{Eval, Filter, PathResolver};
 use libhaystack::val::{Dict, Grid, Ref, Symbol, Value};
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -44,12 +41,11 @@ pub fn namespace() -> &'static Namespace {
     &NS
 }
 
-/// Resolves filter paths: a segment reads a tag from a Dict, and a Ref is
-/// first looked up among the rows being filtered (by `id`), the way a
-/// Haystack server resolves `equipRef->dis` against its own records.
-struct RowPaths<'a>(HashMap<String, &'a Dict>);
+/// Resolves filter Refs against the rows being filtered, by their `id`, the
+/// way a Haystack server resolves `equipRef->dis` against its own records.
+struct RowRefs<'a>(HashMap<String, &'a Dict>);
 
-impl<'a> RowPaths<'a> {
+impl<'a> RowRefs<'a> {
     fn new(rows: &'a [Dict]) -> Self {
         let mut by_id = HashMap::new();
         for d in rows {
@@ -59,47 +55,24 @@ impl<'a> RowPaths<'a> {
         }
         Self(by_id)
     }
+}
 
-    fn deref(&self, v: &Value) -> Option<Dict> {
-        match v {
-            Value::Dict(d) => Some(d.clone()),
-            Value::Ref(r) => self.0.get(r.value()).map(|d| (*d).clone()),
-            _ => None,
-        }
+impl openhay_filter::Resolver for RowRefs<'_> {
+    fn deref(&self, r: &Ref) -> Option<Dict> {
+        self.0.get(r.value()).map(|d| (*d).clone())
     }
 }
 
-impl PathResolver for RowPaths<'_> {
-    fn resolve_for(&self, root: &Dict, path: &Path) -> Value {
-        let mut cur = Value::Dict(root.clone());
-        for seg in path.iter() {
-            cur = match self.deref(&cur) {
-                Some(d) => d.get(&seg.to_string()).cloned().unwrap_or(Value::Null),
-                None => return Value::Null,
-            };
-        }
-        cur
-    }
-
-    fn resolve(&self, _path: &Path) -> Value {
-        Value::Null
-    }
-
-    fn resolve_ref(&self, reference: &Ref) -> Option<Dict> {
-        self.0.get(reference.value()).map(|d| (*d).clone())
-    }
-}
-
-/// Indices of `rows` that match `filter`, evaluated against the bundled
-/// namespace. Refs in paths (`equipRef->dis`) resolve to other rows in the
-/// same slice by their `id`.
+/// Indices of `rows` that match `filter` (Haystack semantics, see
+/// `openhay-filter`). Refs in paths (`equipRef->dis`) resolve to other rows
+/// in the same slice by their `id`.
 pub fn filter_indices(filter: &str, rows: &[Dict]) -> Result<Vec<usize>, DefsError> {
-    let f = Filter::try_from(filter).map_err(|e| DefsError::Filter(e.to_string()))?;
-    let paths = RowPaths::new(rows);
+    let f = openhay_filter::Filter::parse(filter).map_err(|e| DefsError::Filter(e.to_string()))?;
+    let refs = RowRefs::new(rows);
     Ok(rows
         .iter()
         .enumerate()
-        .filter(|(_, d)| f.eval(&EvalContext::make(d, &NS, &paths)))
+        .filter(|(_, d)| f.matches(d, &refs))
         .map(|(i, _)| i)
         .collect())
 }

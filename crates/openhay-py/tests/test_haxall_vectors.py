@@ -21,48 +21,7 @@ from openhay import vectors
 V = vectors.load("haxall/testHaystack-4.0.6")
 
 # case id -> why openhay differs from the reference today
-KNOWN_GAPS: dict[str, str] = {
-    'filter_parse:verifyParse@78': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@96': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@106': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@107': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@125': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@156': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@157': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@158': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@159': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@160': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@161': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_parse:verifyParse@175': 'filter parser: unsupported syntax (keyword tag names, hex numbers, h:mm times, Xeto spec names, // comments)',
-    'filter_eval:FilterTest.testInclude:foo != 13': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:foo < 13': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:foo < "c"': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:foo <= 13': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:foo <= "baz"': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:foo > 12': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:foo >= 12': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:ref->num <= 20': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testInclude:^foo': 'filter: ^symbol (def conjunct) terms not supported',
-    'filter_eval:FilterTest.testInclude:^foo-thru': 'filter: ^symbol (def conjunct) terms not supported',
-    'filter_eval:FilterTest.testInclude:None': 'filter: Xeto spec names not supported',
-    'filter_eval:FilterTest.testInclude:Dict': 'filter: Xeto spec names not supported',
-    'filter_eval:FilterTest.testIncludeNumbers:dis >  75': 'filter: comparisons must be false on a missing tag or a different kind (libhaystack compares them)',
-    'filter_eval:FilterTest.testIncludeList:str=="q"': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:ref->dis=="a"': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:refx->dis=="c"': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:refx->ref': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:refx->ref==@a': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:refx->air': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:refx->water': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeList:not refx->air': 'filter: Ref lists in paths and List vs scalar equality',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->date==2020-09-02': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->date <= 2020-09-02': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->date >= 2020-09-02': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->time == 02:00': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->time <= 03:00': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->time > 03:00': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-    'filter_eval:FilterTest.testIncludeDateTime:ts->tz == "New_York"': 'filter: DateTime virtual paths (ts->date/time/tz) not supported',
-}
+KNOWN_GAPS: dict[str, str] = {}
 
 
 def _canon(v):

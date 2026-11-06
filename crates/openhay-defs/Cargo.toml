@@ -10,4 +10,5 @@ include = ["src/**", "defs/**", "Cargo.toml"]
 [dependencies]
 libhaystack.workspace = true
 openhay-codec.workspace = true
+openhay-filter.workspace = true
 thiserror.workspace = true

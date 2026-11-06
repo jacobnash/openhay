@@ -4,6 +4,7 @@ members = [
     "crates/openhay-codec",
     "crates/openhay-auth",
     "crates/openhay-client",
+    "crates/openhay-filter",
     "crates/openhay-defs",
     "crates/openhay-server",
     "crates/hay-cli",
@@ -25,5 +26,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "sync",
 openhay-codec = { path = "crates/openhay-codec" }
 openhay-auth = { path = "crates/openhay-auth" }
 openhay-client = { path = "crates/openhay-client" }
+openhay-filter = { path = "crates/openhay-filter" }
 openhay-defs = { path = "crates/openhay-defs" }
 openhay-server = { path = "crates/openhay-server" }
