@@ -1,7 +1,9 @@
 //! Haystack wire formats for both Haystack 3 and Haystack 4 servers.
 //!
-//! Values, Zinc, Hayson (JSON v4) and Trio come from `libhaystack` (BSD-3, J2
-//! Innovations). This crate adds what is missing for real-world interop:
+//! Values come from `libhaystack` (BSD-3, J2 Innovations). The Zinc and Trio
+//! readers are openhay's own, checked against haxall's reference test cases
+//! (`openhay.vectors`). This crate also adds what is missing for real-world
+//! interop:
 //!
 //! * **JSON v3** — the prefixed-string encoding (`"n:72 °F"`, `"r:abc Dis"`)
 //!   that SkySpark 3, Haxall in v3 mode and older nhaystack builds emit.
@@ -12,11 +14,11 @@
 pub mod csv;
 pub mod hayson;
 pub mod json3;
+pub mod trio_read;
 pub mod zinc;
+pub mod zinc_read;
 
-use libhaystack::encoding::trio::decode::TrioReader;
 use libhaystack::encoding::trio::encode::TrioWriter;
-use libhaystack::encoding::zinc::decode::from_str as zinc_from_str;
 use libhaystack::encoding::zinc::encode::ToZinc;
 pub use libhaystack::val::{Dict, Grid, Value};
 
@@ -132,17 +134,10 @@ impl Format {
 /// Decode a grid. For [`Format::Trio`] every record becomes a row.
 pub fn decode_grid(format: Format, text: &str) -> Result<Grid> {
     match format {
-        Format::Zinc => match zinc_from_str(text).map_err(|e| CodecError::Zinc(e.to_string()))? {
-            Value::Grid(g) => Ok(*g),
-            other => Err(CodecError::Invalid(format!(
-                "expected zinc grid, got {other:?}"
-            ))),
-        },
+        Format::Zinc => zinc_read::read_grid(text).map_err(CodecError::Zinc),
         Format::Json3 => json3::decode_grid(text),
         Format::Hayson => hayson::decode_grid(text),
-        Format::Trio => {
-            TrioReader::grid_from_str(text).map_err(|e| CodecError::Trio(e.to_string()))
-        }
+        Format::Trio => trio_read::read_grid(text).map_err(CodecError::Trio),
         Format::Csv => Err(CodecError::EncodeOnly(Format::Csv)),
     }
 }
@@ -171,7 +166,7 @@ pub fn encode_grid(format: Format, grid: &Grid) -> Result<String> {
 
 /// Decode a single scalar in Zinc syntax (e.g. `72°F`, `@abc`, `2024-01-01`).
 pub fn decode_zinc_scalar(text: &str) -> Result<Value> {
-    zinc_from_str(text).map_err(|e| CodecError::Zinc(e.to_string()))
+    zinc_read::read_value(text).map_err(CodecError::Zinc)
 }
 
 /// Encode a single value in Zinc syntax.

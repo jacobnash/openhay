@@ -894,6 +894,7 @@ dependencies = [
 name = "openhay-codec"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "libhaystack",
  "serde_json",
  "thiserror",

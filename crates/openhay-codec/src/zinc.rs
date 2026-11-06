@@ -40,8 +40,12 @@ fn write_grid(out: &mut String, grid: &Grid) -> crate::Result<()> {
             if i > 0 {
                 out.push(',');
             }
-            if let Some(v) = row.get(&c.name) {
-                write_val(out, v)?;
+            match row.get(&c.name) {
+                Some(v) => write_val(out, v)?,
+                // A row of all-empty cells in a one-column grid would be a
+                // blank line, which readers skip - so the row would vanish.
+                None if grid.columns.len() == 1 => out.push('N'),
+                None => {}
             }
         }
         out.push('\n');
@@ -69,6 +73,29 @@ fn write_val(out: &mut String, v: &Value) -> crate::Result<()> {
             out.push_str("<<\n");
             write_grid(out, g)?;
             out.push_str(">>");
+        }
+        // Ours rather than libhaystack's: its DateTime writer shifts Etc-style
+        // zones (GMT-10) and its Uri writer doubles every backslash.
+        Value::DateTime(_) => {
+            let j = crate::hayson::encode_value(v);
+            let val = j.get("val").and_then(|x| x.as_str()).unwrap_or_default();
+            let tz = j.get("tz").and_then(|x| x.as_str()).unwrap_or("UTC");
+            out.push_str(val);
+            if !(tz == "UTC" && val.ends_with('Z')) {
+                out.push(' ');
+                out.push_str(tz);
+            }
+        }
+        Value::Uri(u) => {
+            out.push('`');
+            for c in u.value().chars() {
+                match c {
+                    '`' => out.push_str("\\`"),
+                    '\n' => out.push_str("\\n"),
+                    c => out.push(c),
+                }
+            }
+            out.push('`');
         }
         other => out.push_str(&encode_zinc_scalar(other)?),
     }

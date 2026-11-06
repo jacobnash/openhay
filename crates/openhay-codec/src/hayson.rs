@@ -85,10 +85,24 @@ fn encode_number(n: &Number) -> J {
     } else {
         None
     };
+    // Integral values print as JSON integers only while that's exact
+    // (|v| < 2^53); libhaystack cast every integral f64 to i64, which
+    // turned 2.4e20 into i64::MAX.
+    let plain = || -> J {
+        let v = n.value;
+        if v.fract() == 0.0 && v.abs() < 9_007_199_254_740_992.0 {
+            J::from(v as i64)
+        } else {
+            serde_json::Number::from_f64(v)
+                .map(J::Number)
+                .unwrap_or(J::Null)
+        }
+    };
     match (special, n.unit) {
         (Some(s), Some(u)) => json!({"_kind": "number", "val": s, "unit": u.symbol()}),
         (Some(s), None) => json!({"_kind": "number", "val": s}),
-        _ => serde_json::to_value(Value::Number(*n)).unwrap_or(J::Null),
+        (None, Some(u)) => json!({"_kind": "number", "val": plain(), "unit": u.symbol()}),
+        (None, None) => plain(),
     }
 }
 
@@ -141,6 +155,17 @@ pub fn decode_value(j: &J) -> crate::Result<Value> {
                     Some(u) => Value::make_number_unit(x, u),
                     None => Value::make_number(x),
                 }
+            }
+            // Ours: libhaystack's serde builds Etc-style zones (GMT-10) with
+            // the offset inverted, shifting the instant.
+            Some("dateTime") => {
+                let val = o.get("val").and_then(J::as_str).unwrap_or_default();
+                let tz = o.get("tz").and_then(J::as_str).unwrap_or("UTC");
+                libhaystack::val::DateTime::parse_from_rfc3339_with_timezone(val, tz)
+                    .map(Value::make_datetime)
+                    .map_err(|e| {
+                        crate::CodecError::Invalid(format!("bad dateTime {val:?} {tz}: {e}"))
+                    })?
             }
             Some("grid") => {
                 let dict_of = |v: Option<&J>| -> crate::Result<Option<Dict>> {
