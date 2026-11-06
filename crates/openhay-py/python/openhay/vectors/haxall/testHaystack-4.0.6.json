@@ -1,0 +1,3040 @@
+{
+ "source": {
+  "project": "haxall",
+  "repo": "https://github.com/haxall/haxall",
+  "tag": "v4.0.6",
+  "commit": "0348eb71e25c8a2340a3f53d971d2cfb503bfe2d",
+  "tests": "src/test/testHaystack/fan (FilterTest, ZincTest, TrioTest)",
+  "runtime": "haxall 4.0.6 haystack pod",
+  "license": "AFL-3.0",
+  "note": "Inputs extracted from the reference test suite; expected values produced by running each input through the reference runtime (tools/haxall-vectors). Hayson encoding."
+ },
+ "zinc_grids": [
+  {
+   "src": "verifyGrid@22",
+   "zinc": "ver:\"3.0\"\nfooBar33\n",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "fooBar33"
+     }
+    ],
+    "rows": []
+   }
+  },
+  {
+   "src": "verifyGrid@31",
+   "zinc": "ver:\"3.0\" tag foo:\"bar\"\nxyz\n\"val\"\n",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0",
+     "foo": "bar",
+     "tag": {
+      "_kind": "marker"
+     }
+    },
+    "cols": [
+     {
+      "name": "xyz"
+     }
+    ],
+    "rows": [
+     {
+      "xyz": "val"
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@41",
+   "zinc": "ver:\"3.0\"\nval\nN\n",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "val"
+     }
+    ],
+    "rows": [
+     {}
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@51",
+   "zinc": "ver:\"3.0\"\na,b\n1,2\n3,4\n",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "b"
+     }
+    ],
+    "rows": [
+     {
+      "a": 1,
+      "b": 2
+     },
+     {
+      "a": 3,
+      "b": 4
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@63",
+   "zinc": "ver:\"2.0\" bg: Bin(image/jpeg) mark\nfile1 dis:\"F1\" icon: Bin(image/gif),file2 icon: Bin(image/jpg)\nBin(text/plain),N\n4,Bin(image/png)\nBin(text/html; a=foo; bar=sep),Bin(text/html; charset=utf8)",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0",
+     "bg": {
+      "_kind": "xstr",
+      "val": "image/jpeg",
+      "type": "Bin"
+     },
+     "mark": {
+      "_kind": "marker"
+     }
+    },
+    "cols": [
+     {
+      "name": "file1",
+      "meta": {
+       "icon": {
+        "_kind": "xstr",
+        "val": "image/gif",
+        "type": "Bin"
+       },
+       "dis": "F1"
+      }
+     },
+     {
+      "name": "file2",
+      "meta": {
+       "icon": {
+        "_kind": "xstr",
+        "val": "image/jpg",
+        "type": "Bin"
+       }
+      }
+     }
+    ],
+    "rows": [
+     {
+      "file1": {
+       "_kind": "xstr",
+       "val": "text/plain",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": 4,
+      "file2": {
+       "_kind": "xstr",
+       "val": "image/png",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": {
+       "_kind": "xstr",
+       "val": "text/html;a=foo;bar=sep",
+       "type": "Bin"
+      },
+      "file2": {
+       "_kind": "xstr",
+       "val": "text/html;charset=utf8",
+       "type": "Bin"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@76",
+   "zinc": "ver:\"3.0\"\na,    b,      c,      d\nT,    F,      N,   -99\n2.3,  -5e-10, 2.4e20, 123e-10\n\"\",   \"a\",   \"\\\" \\\\ \\t \\n \\r\", \"\\uabcd\"\n`path`, @12cbb082-0c02ae73, 4s, -2.5min\nM,R,Bin(\"image/png\"),Bin(\"image/png\")\n2009-12-31, 23:59:01, 01:02:03.123, 2009-02-03T04:05:06Z\nINF, -INF, \"\", NaN\nC(12,-34),C(0.123,-0.789),C(84.5,-77.45),C(-90,180)\nNA,N,^a:b,\"foo\"\n",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "b"
+     },
+     {
+      "name": "c"
+     },
+     {
+      "name": "d"
+     }
+    ],
+    "rows": [
+     {
+      "a": true,
+      "b": false,
+      "d": -99
+     },
+     {
+      "a": 2.3,
+      "b": -5e-10,
+      "c": 2.4e+20,
+      "d": 1.23e-08
+     },
+     {
+      "a": "",
+      "b": "a",
+      "c": "\" \\ \t \n \r",
+      "d": "ꯍ"
+     },
+     {
+      "a": {
+       "_kind": "uri",
+       "val": "path"
+      },
+      "b": {
+       "_kind": "ref",
+       "val": "12cbb082-0c02ae73"
+      },
+      "c": {
+       "_kind": "number",
+       "val": 4,
+       "unit": "sec"
+      },
+      "d": {
+       "_kind": "number",
+       "val": -2.5,
+       "unit": "min"
+      }
+     },
+     {
+      "a": {
+       "_kind": "marker"
+      },
+      "b": {
+       "_kind": "remove"
+      },
+      "c": {
+       "_kind": "xstr",
+       "val": "image/png",
+       "type": "Bin"
+      },
+      "d": {
+       "_kind": "xstr",
+       "val": "image/png",
+       "type": "Bin"
+      }
+     },
+     {
+      "a": {
+       "_kind": "date",
+       "val": "2009-12-31"
+      },
+      "b": {
+       "_kind": "time",
+       "val": "23:59:01"
+      },
+      "c": {
+       "_kind": "time",
+       "val": "01:02:03.123"
+      },
+      "d": {
+       "_kind": "dateTime",
+       "val": "2009-02-03T04:05:06Z",
+       "tz": "UTC"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": "INF"
+      },
+      "b": {
+       "_kind": "number",
+       "val": "-INF"
+      },
+      "c": "",
+      "d": {
+       "_kind": "number",
+       "val": "NaN"
+      }
+     },
+     {
+      "a": {
+       "_kind": "coord",
+       "lng": -34.0,
+       "lat": 12.0
+      },
+      "b": {
+       "_kind": "coord",
+       "lng": -0.789,
+       "lat": 0.123
+      },
+      "c": {
+       "_kind": "coord",
+       "lng": -77.45,
+       "lat": 84.5
+      },
+      "d": {
+       "_kind": "coord",
+       "lng": 180.0,
+       "lat": -90.0
+      }
+     },
+     {
+      "a": {
+       "_kind": "na"
+      },
+      "c": {
+       "_kind": "symbol",
+       "val": "a:b"
+      },
+      "d": "foo"
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@102",
+   "zinc": "ver:\"3.0\"\n_foo\n`foo$20bar`\n`foo\\`bar`\n`file \\#2`\n\"$15\"",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "_foo"
+     }
+    ],
+    "rows": [
+     {
+      "_foo": {
+       "_kind": "uri",
+       "val": "foo$20bar"
+      }
+     },
+     {
+      "_foo": {
+       "_kind": "uri",
+       "val": "foo`bar"
+      }
+     },
+     {
+      "_foo": {
+       "_kind": "uri",
+       "val": "file \\#2"
+      }
+     },
+     {
+      "_foo": "$15"
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@117",
+   "zinc": "ver:\"3.0\"\na, b\n-3.1kg,4kg\n5%,3.2%\n5kWh/ft²,-15kWh/m²\n123e+12kJ/kg_dry,74Δ°F",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "b"
+     }
+    ],
+    "rows": [
+     {
+      "a": {
+       "_kind": "number",
+       "val": -3.1,
+       "unit": "kg"
+      },
+      "b": {
+       "_kind": "number",
+       "val": 4,
+       "unit": "kg"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": 5,
+       "unit": "%"
+      },
+      "b": {
+       "_kind": "number",
+       "val": 3.2,
+       "unit": "%"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": 5,
+       "unit": "kWh/ft²"
+      },
+      "b": {
+       "_kind": "number",
+       "val": -15,
+       "unit": "kWh/m²"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": 123000000000000.0,
+       "unit": "kJ/kg_dry"
+      },
+      "b": {
+       "_kind": "number",
+       "val": 74,
+       "unit": "Δ°F"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@132",
+   "zinc": "ver:\"3.0\"\na,b\nFoo(\"foo\"),C(\"\")\nBin(\"image/svg\"),B(\"b\\n)!\")\nSpan(\"2016-01-10\"),Color(\"#fff\")",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "b"
+     }
+    ],
+    "rows": [
+     {
+      "a": {
+       "_kind": "xstr",
+       "val": "foo",
+       "type": "Foo"
+      },
+      "b": {
+       "_kind": "xstr",
+       "val": "",
+       "type": "C"
+      }
+     },
+     {
+      "a": {
+       "_kind": "xstr",
+       "val": "image/svg",
+       "type": "Bin"
+      },
+      "b": {
+       "_kind": "xstr",
+       "val": "b\n)!",
+       "type": "B"
+      }
+     },
+     {
+      "a": {
+       "_kind": "xstr",
+       "val": "2016-01-10",
+       "type": "Span"
+      },
+      "b": {
+       "_kind": "xstr",
+       "val": "#fff",
+       "type": "Color"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@146",
+   "zinc": "ver:\"3.0\"\na, _b, __45\n, 1, 2\n3, , 5\n6, 7_000,\n,,10\n,,\n14,,\n",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "_b"
+     },
+     {
+      "name": "__45"
+     }
+    ],
+    "rows": [
+     {
+      "_b": 1,
+      "__45": 2
+     },
+     {
+      "a": 3,
+      "__45": 5
+     },
+     {
+      "a": 6,
+      "_b": 7000
+     },
+     {
+      "__45": 10
+     },
+     {},
+     {
+      "a": 14
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@166",
+   "zinc": "ver:\"3.0\"\na,b\n2010-03-01T23:55:00.013-05:00 GMT+5,2010-03-01T23:55:00.013+10:00 GMT-10",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "b"
+     }
+    ],
+    "rows": [
+     {
+      "a": {
+       "_kind": "dateTime",
+       "val": "2010-03-01T23:55:00.013-05:00",
+       "tz": "GMT+5"
+      },
+      "b": {
+       "_kind": "dateTime",
+       "val": "2010-03-01T23:55:00.013+10:00",
+       "tz": "GMT-10"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@176",
+   "zinc": "ver:\"3.0\" a: 2009-02-03T04:05:06Z foo b: 2010-02-03T04:05:06Z UTC bar c: 2009-12-03T04:05:06Z London baz\na\n3.814697265625E-6\n2010-12-18T14:11:30.924Z\n2010-12-18T14:11:30.925Z UTC\n2010-12-18T14:11:30.925Z London\n2015-01-02T06:13:38.701-08:00 PST8PDT\n45$\n33£\n@12cbb08e-0c02ae73\n7.15625E-4kWh/ft²",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0",
+     "a": {
+      "_kind": "dateTime",
+      "val": "2009-02-03T04:05:06Z",
+      "tz": "UTC"
+     },
+     "b": {
+      "_kind": "dateTime",
+      "val": "2010-02-03T04:05:06Z",
+      "tz": "UTC"
+     },
+     "bar": {
+      "_kind": "marker"
+     },
+     "c": {
+      "_kind": "dateTime",
+      "val": "2009-12-03T04:05:06Z",
+      "tz": "London"
+     },
+     "foo": {
+      "_kind": "marker"
+     },
+     "baz": {
+      "_kind": "marker"
+     }
+    },
+    "cols": [
+     {
+      "name": "a"
+     }
+    ],
+    "rows": [
+     {
+      "a": 3.814697265625e-06
+     },
+     {
+      "a": {
+       "_kind": "dateTime",
+       "val": "2010-12-18T14:11:30.924Z",
+       "tz": "UTC"
+      }
+     },
+     {
+      "a": {
+       "_kind": "dateTime",
+       "val": "2010-12-18T14:11:30.925Z",
+       "tz": "UTC"
+      }
+     },
+     {
+      "a": {
+       "_kind": "dateTime",
+       "val": "2010-12-18T14:11:30.925Z",
+       "tz": "London"
+      }
+     },
+     {
+      "a": {
+       "_kind": "dateTime",
+       "val": "2015-01-02T06:13:38.701-08:00",
+       "tz": "Los_Angeles"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": 45,
+       "unit": "$"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": 33,
+       "unit": "£"
+      }
+     },
+     {
+      "a": {
+       "_kind": "ref",
+       "val": "12cbb08e-0c02ae73"
+      }
+     },
+     {
+      "a": {
+       "_kind": "number",
+       "val": 0.000715625,
+       "unit": "kWh/ft²"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@212",
+   "zinc": "ver:\"3.0\"\nval\n<<\nver:\"3.0\"\nx,y\n4,6\n\n>>\n\"foo\"",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "val"
+     }
+    ],
+    "rows": [
+     {
+      "val": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "x"
+        },
+        {
+         "name": "y"
+        }
+       ],
+       "rows": [
+        {
+         "x": 4,
+         "y": 6
+        }
+       ]
+      }
+     },
+     {
+      "val": "foo"
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@230",
+   "zinc": "ver:\"3.0\"\nval\n<<\nver:\"3.0\"\nx,y\n4,6\n\n>>\n<<\nver:\"3.0\" foo\nz\n1\n2\n\n>>",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "val"
+     }
+    ],
+    "rows": [
+     {
+      "val": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "x"
+        },
+        {
+         "name": "y"
+        }
+       ],
+       "rows": [
+        {
+         "x": 4,
+         "y": 6
+        }
+       ]
+      }
+     },
+     {
+      "val": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0",
+        "foo": {
+         "_kind": "marker"
+        }
+       },
+       "cols": [
+        {
+         "name": "z"
+        }
+       ],
+       "rows": [
+        {
+         "z": 1
+        },
+        {
+         "z": 2
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@254",
+   "zinc": "ver:\"3.0\"\ncol1,col2\n<<\nver:\"3.0\"\nx,y\n4,6\n\n>>,<<\nver:\"3.0\" foo\nz\n1\n2\n\n>>",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "col1"
+     },
+     {
+      "name": "col2"
+     }
+    ],
+    "rows": [
+     {
+      "col1": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "x"
+        },
+        {
+         "name": "y"
+        }
+       ],
+       "rows": [
+        {
+         "x": 4,
+         "y": 6
+        }
+       ]
+      },
+      "col2": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0",
+        "foo": {
+         "_kind": "marker"
+        }
+       },
+       "cols": [
+        {
+         "name": "z"
+        }
+       ],
+       "rows": [
+        {
+         "z": 1
+        },
+        {
+         "z": 2
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@276",
+   "zinc": "ver:\"3.0\"\ncol1,col2,col3\n<<\nver:\"3.0\"\na\n1\n\n>>,<<\nver:\"3.0\"\nb\n1\n\n>>,<<\nver:\"3.0\"\nc\n1\n\n>>\n<<\nver:\"3.0\"\na\n2\n\n>>,<<\nver:\"3.0\"\nb\n2\n\n>>,<<\nver:\"3.0\"\nc\n2\n\n>>",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "col1"
+     },
+     {
+      "name": "col2"
+     },
+     {
+      "name": "col3"
+     }
+    ],
+    "rows": [
+     {
+      "col1": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "a"
+        }
+       ],
+       "rows": [
+        {
+         "a": 1
+        }
+       ]
+      },
+      "col2": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "b"
+        }
+       ],
+       "rows": [
+        {
+         "b": 1
+        }
+       ]
+      },
+      "col3": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "c"
+        }
+       ],
+       "rows": [
+        {
+         "c": 1
+        }
+       ]
+      }
+     },
+     {
+      "col1": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "a"
+        }
+       ],
+       "rows": [
+        {
+         "a": 2
+        }
+       ]
+      },
+      "col2": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "b"
+        }
+       ],
+       "rows": [
+        {
+         "b": 2
+        }
+       ]
+      },
+      "col3": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "c"
+        }
+       ],
+       "rows": [
+        {
+         "c": 2
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@319",
+   "zinc": "ver:\"3.0\"\nouter\n<<\nver:\"3.0\"\ninner\n<<\nver:\"3.0\"\nx\n1\n\n>>\n<<\nver:\"3.0\"\ny\n2\n\n>>\n\n>>",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0"
+    },
+    "cols": [
+     {
+      "name": "outer"
+     }
+    ],
+    "rows": [
+     {
+      "outer": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "inner"
+        }
+       ],
+       "rows": [
+        {
+         "inner": {
+          "_kind": "grid",
+          "meta": {
+           "ver": "3.0"
+          },
+          "cols": [
+           {
+            "name": "x"
+           }
+          ],
+          "rows": [
+           {
+            "x": 1
+           }
+          ]
+         }
+        },
+        {
+         "inner": {
+          "_kind": "grid",
+          "meta": {
+           "ver": "3.0"
+          },
+          "cols": [
+           {
+            "name": "y"
+           }
+          ],
+          "rows": [
+           {
+            "y": 2
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@390",
+   "zinc": "ver:\"2.0\" bg: Bin(image/jpeg) mark\nfile1 dis:\"F1\" icon: Bin(image/gif),file2 icon: Bin(image/jpg)\nBin(text/plain),N\n4,Bin(image/png)\n5,Bin(application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)\nBin(text/html; a=foo; bar=sep),Bin(text/html; charset=utf8)",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0",
+     "bg": {
+      "_kind": "xstr",
+      "val": "image/jpeg",
+      "type": "Bin"
+     },
+     "mark": {
+      "_kind": "marker"
+     }
+    },
+    "cols": [
+     {
+      "name": "file1",
+      "meta": {
+       "icon": {
+        "_kind": "xstr",
+        "val": "image/gif",
+        "type": "Bin"
+       },
+       "dis": "F1"
+      }
+     },
+     {
+      "name": "file2",
+      "meta": {
+       "icon": {
+        "_kind": "xstr",
+        "val": "image/jpg",
+        "type": "Bin"
+       }
+      }
+     }
+    ],
+    "rows": [
+     {
+      "file1": {
+       "_kind": "xstr",
+       "val": "text/plain",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": 4,
+      "file2": {
+       "_kind": "xstr",
+       "val": "image/png",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": 5,
+      "file2": {
+       "_kind": "xstr",
+       "val": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": {
+       "_kind": "xstr",
+       "val": "text/html;a=foo;bar=sep",
+       "type": "Bin"
+      },
+      "file2": {
+       "_kind": "xstr",
+       "val": "text/html;charset=utf8",
+       "type": "Bin"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "src": "verifyGrid@405",
+   "zinc": "ver:\"2.0\" bg: Bin(\"image/jpeg\") mark\nfile1 dis:\"F1\" icon: Bin(\"image/gif\"),file2 icon: Bin(\"image/jpg\")\nBin(\"text/plain\"),N\n4,Bin(\"image/png\")\n5,Bin(\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\")\nBin(\"text/html; a=foo; bar=sep\"),Bin(\"text/html; charset=utf8\")",
+   "expected": {
+    "_kind": "grid",
+    "meta": {
+     "ver": "3.0",
+     "bg": {
+      "_kind": "xstr",
+      "val": "image/jpeg",
+      "type": "Bin"
+     },
+     "mark": {
+      "_kind": "marker"
+     }
+    },
+    "cols": [
+     {
+      "name": "file1",
+      "meta": {
+       "icon": {
+        "_kind": "xstr",
+        "val": "image/gif",
+        "type": "Bin"
+       },
+       "dis": "F1"
+      }
+     },
+     {
+      "name": "file2",
+      "meta": {
+       "icon": {
+        "_kind": "xstr",
+        "val": "image/jpg",
+        "type": "Bin"
+       }
+      }
+     }
+    ],
+    "rows": [
+     {
+      "file1": {
+       "_kind": "xstr",
+       "val": "text/plain",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": 4,
+      "file2": {
+       "_kind": "xstr",
+       "val": "image/png",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": 5,
+      "file2": {
+       "_kind": "xstr",
+       "val": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+       "type": "Bin"
+      }
+     },
+     {
+      "file1": {
+       "_kind": "xstr",
+       "val": "text/html; a=foo; bar=sep",
+       "type": "Bin"
+      },
+      "file2": {
+       "_kind": "xstr",
+       "val": "text/html; charset=utf8",
+       "type": "Bin"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "zinc_errs": [
+  {
+   "src": "verifyZincErr@357",
+   "zinc": "ver:\"3.0\"\nfoo\n@\n",
+   "error": "sys::ParseErr: Invalid empty Ref [line 3]"
+  },
+  {
+   "src": "verifyZincErr@363",
+   "zinc": "ver:\"3.0\"\nfoo\n@@\n",
+   "error": "sys::ParseErr: Invalid empty Ref [line 3]"
+  }
+ ],
+ "zinc_tags": [
+  {
+   "src": "verifyTags@699",
+   "zinc": "",
+   "expected": {}
+  },
+  {
+   "src": "verifyTags@700",
+   "zinc": "foo",
+   "expected": {
+    "foo": {
+     "_kind": "marker"
+    }
+   }
+  },
+  {
+   "src": "verifyTags@701",
+   "zinc": "age:12",
+   "expected": {
+    "age": 12
+   }
+  },
+  {
+   "src": "verifyTags@702",
+   "zinc": "age:12yr",
+   "expected": {
+    "age": {
+     "_kind": "number",
+     "val": 12,
+     "unit": "yr"
+    }
+   }
+  },
+  {
+   "src": "verifyTags@703",
+   "zinc": "name:\"b\" bday:1972-06-07",
+   "expected": {
+    "name": "b",
+    "bday": {
+     "_kind": "date",
+     "val": "1972-06-07"
+    }
+   }
+  },
+  {
+   "src": "verifyTags@704",
+   "zinc": "name:\"b\" bday:1972-06-07 cool",
+   "expected": {
+    "name": "b",
+    "bday": {
+     "_kind": "date",
+     "val": "1972-06-07"
+    },
+    "cool": {
+     "_kind": "marker"
+    }
+   }
+  },
+  {
+   "src": "verifyTags@705",
+   "zinc": "foo: 1, bar: 2 baz: 3",
+   "expected": {
+    "foo": 1,
+    "bar": 2,
+    "baz": 3
+   }
+  },
+  {
+   "src": "verifyTags@706",
+   "zinc": "foo: 1, bar: 2, baz: 3",
+   "expected": {
+    "foo": 1,
+    "bar": 2,
+    "baz": 3
+   }
+  }
+ ],
+ "trio": [
+  {
+   "src": "verifyTrio@50",
+   "trio": "",
+   "expected": []
+  },
+  {
+   "src": "verifyTrio@54",
+   "trio": "x",
+   "expected": [
+    {
+     "x": {
+      "_kind": "marker"
+     }
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@58",
+   "trio": "multiLine\ndoc:\n  hello\n  world\n\ncode:\n   -- b\n // foo\n    bar",
+   "expected": [
+    {
+     "multiLine": {
+      "_kind": "marker"
+     },
+     "doc": "hello\nworld\n",
+     "code": "  -- b\n// foo\n   bar"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@70",
+   "trio": "// some stuff\n\n---\n---\nsite\ngeoAddr:13 main st\n---\n\n---\n// what it is\nsite\n\ngeoAddr:14 main st\n// that's right\n",
+   "expected": [
+    {
+     "site": {
+      "_kind": "marker"
+     },
+     "geoAddr": "13 main st"
+    },
+    {
+     "site": {
+      "_kind": "marker"
+     },
+     "geoAddr": "14 main st"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@89",
+   "trio": "a:hello$world\nb:Foo-123\n",
+   "expected": [
+    {
+     "a": "hello$world",
+     "b": "Foo-123"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@95",
+   "trio": "a\nb:3\n// ignore\n\nc:foo\n-\nd:bar\n----\ne:5 x\n",
+   "expected": [
+    {
+     "a": {
+      "_kind": "marker"
+     },
+     "b": 3,
+     "c": "foo"
+    },
+    {
+     "d": "bar"
+    },
+    {
+     "e": "5 x"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@110",
+   "trio": "m\nbt:true\nbf: false\nbt2: T\nbf2: F\ni1: -123456\ni2: 1_2_3\nf1: 2.0\nf2: -5e+30\nd1: 3sec\nd2: -15min\nd3: 24hr\nu1: 45°C\ns: \"foo\\tbar\\u00ab\"\nu:`some/file`\nna: NA\nsymbol: ^hot-water\nidNew:@13b27fda-284fd8e2\nidComplex:@foo:bar\ndate: 2009-01-02\ntime1: 13:05\ntime2: 7:56\ntime3: 6:12:34\ngeoCoord: C(37.65,-77.61)\n_0: \"unnamed\"\n",
+   "expected": [
+    {
+     "m": {
+      "_kind": "marker"
+     },
+     "bt": true,
+     "bf": false,
+     "bt2": true,
+     "bf2": false,
+     "i1": -123456,
+     "i2": 123,
+     "f1": 2,
+     "f2": -5e+30,
+     "d1": {
+      "_kind": "number",
+      "val": 3,
+      "unit": "sec"
+     },
+     "d2": {
+      "_kind": "number",
+      "val": -15,
+      "unit": "min"
+     },
+     "d3": {
+      "_kind": "number",
+      "val": 24,
+      "unit": "hr"
+     },
+     "u1": {
+      "_kind": "number",
+      "val": 45,
+      "unit": "°C"
+     },
+     "s": "foo\tbar«",
+     "u": {
+      "_kind": "uri",
+      "val": "some/file"
+     },
+     "na": {
+      "_kind": "na"
+     },
+     "symbol": {
+      "_kind": "symbol",
+      "val": "hot-water"
+     },
+     "idNew": {
+      "_kind": "ref",
+      "val": "13b27fda-284fd8e2"
+     },
+     "idComplex": {
+      "_kind": "ref",
+      "val": "foo:bar"
+     },
+     "date": {
+      "_kind": "date",
+      "val": "2009-01-02"
+     },
+     "time1": {
+      "_kind": "time",
+      "val": "13:05:00"
+     },
+     "time2": {
+      "_kind": "time",
+      "val": "07:56:00"
+     },
+     "time3": {
+      "_kind": "time",
+      "val": "06:12:34"
+     },
+     "geoCoord": {
+      "_kind": "coord",
+      "lng": -77.61,
+      "lat": 37.65
+     },
+     "_0": "unnamed"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@165",
+   "trio": "fake:NaN\nbig:INF\nsmall:-INF\nref:@id\nd:2010-01-03\nt:true\n---\nfake:\"NaN\"\nbig:\"INF\"\nbad:\"NA\"\nsmall:\"-INF\"\nref:\"@id\"\nd:\"2010-01-03\"\nt:\"true\"\nf:\"false\"\nn1:\"300\"\nn2:\"-400\"\nquoted:\"\\\"Quoted String\\\"\"",
+   "expected": [
+    {
+     "fake": {
+      "_kind": "number",
+      "val": "NaN"
+     },
+     "big": {
+      "_kind": "number",
+      "val": "INF"
+     },
+     "small": {
+      "_kind": "number",
+      "val": "-INF"
+     },
+     "ref": {
+      "_kind": "ref",
+      "val": "id"
+     },
+     "d": {
+      "_kind": "date",
+      "val": "2010-01-03"
+     },
+     "t": true
+    },
+    {
+     "fake": "NaN",
+     "big": "INF",
+     "bad": "NA",
+     "small": "-INF",
+     "ref": "@id",
+     "d": "2010-01-03",
+     "t": "true",
+     "f": "false",
+     "n1": "300",
+     "n2": "-400",
+     "quoted": "\"Quoted String\""
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@190",
+   "trio": "id:@2015-12-29T14:22:39.364Z\nmod:2015-12-29T14:22:39.364Z\nstr:2015-12-29 14:22:39.364Z",
+   "expected": [
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "2015-12-29T14:22:39.364Z"
+     },
+     "mod": {
+      "_kind": "dateTime",
+      "val": "2015-12-29T14:22:39.364Z",
+      "tz": "UTC"
+     },
+     "str": "2015-12-29 14:22:39.364Z"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@207",
+   "trio": "name:foobar\nlist1:[@a, @b]\ndict1:{a:\"Alpha\" b}\ngrid1:Zinc:\n  ver:\"3.0\"\n  a,b\n  1,2\n  3,4\nlist2:Zinc:\n  [\"hi\", N, <<\n  ver:\"3.0\"\n  a,b\n  10,11\n  12,13>>]\ndict2:Zinc:\n  {foo grid:<<\n  ver:\"3.0\"\n  a,b\n  20,21\n  22,23>>}\ndoc:\n  hi there\n",
+   "expected": [
+    {
+     "name": "foobar",
+     "list1": [
+      {
+       "_kind": "ref",
+       "val": "a"
+      },
+      {
+       "_kind": "ref",
+       "val": "b"
+      }
+     ],
+     "dict1": {
+      "a": "Alpha",
+      "b": {
+       "_kind": "marker"
+      }
+     },
+     "grid1": {
+      "_kind": "grid",
+      "meta": {
+       "ver": "3.0"
+      },
+      "cols": [
+       {
+        "name": "a"
+       },
+       {
+        "name": "b"
+       }
+      ],
+      "rows": [
+       {
+        "a": 1,
+        "b": 2
+       },
+       {
+        "a": 3,
+        "b": 4
+       }
+      ]
+     },
+     "list2": [
+      "hi",
+      null,
+      {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "a"
+        },
+        {
+         "name": "b"
+        }
+       ],
+       "rows": [
+        {
+         "a": 10,
+         "b": 11
+        },
+        {
+         "a": 12,
+         "b": 13
+        }
+       ]
+      }
+     ],
+     "dict2": {
+      "foo": {
+       "_kind": "marker"
+      },
+      "grid": {
+       "_kind": "grid",
+       "meta": {
+        "ver": "3.0"
+       },
+       "cols": [
+        {
+         "name": "a"
+        },
+        {
+         "name": "b"
+        }
+       ],
+       "rows": [
+        {
+         "a": 20,
+         "b": 21
+        },
+        {
+         "a": 22,
+         "b": 23
+        }
+       ]
+      }
+     },
+     "doc": "hi there"
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@240",
+   "trio": "name:foobar\ntrio:Trio:\n  dis:\"nested\"\n  foo\n",
+   "expected": [
+    {
+     "name": "foobar",
+     "trio": {
+      "dis": "nested",
+      "foo": {
+       "_kind": "marker"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@250",
+   "trio": "list:[\n  13,\n  \"foo\",\n  {dis:\"dict!\", mark},\n  ]\nchildren: [\n  {fan, motor, equip},\n  {damper, actuator, equip},\n  ]\n",
+   "expected": [
+    {
+     "list": [
+      13,
+      "foo",
+      {
+       "dis": "dict!",
+       "mark": {
+        "_kind": "marker"
+       }
+      }
+     ],
+     "children": [
+      {
+       "fan": {
+        "_kind": "marker"
+       },
+       "motor": {
+        "_kind": "marker"
+       },
+       "equip": {
+        "_kind": "marker"
+       }
+      },
+      {
+       "damper": {
+        "_kind": "marker"
+       },
+       "actuator": {
+        "_kind": "marker"
+       },
+       "equip": {
+        "_kind": "marker"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@265",
+   "trio": "one: {a,b:123,c}\ntwo: {e, f:123, g }\nthr: {h i:123  j }\n",
+   "expected": [
+    {
+     "one": {
+      "a": {
+       "_kind": "marker"
+      },
+      "b": 123,
+      "c": {
+       "_kind": "marker"
+      }
+     },
+     "two": {
+      "e": {
+       "_kind": "marker"
+      },
+      "f": 123,
+      "g": {
+       "_kind": "marker"
+      }
+     },
+     "thr": {
+      "h": {
+       "_kind": "marker"
+      },
+      "i": 123,
+      "j": {
+       "_kind": "marker"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "src": "verifyTrio@274",
+   "trio": "---\n---\n",
+   "expected": []
+  },
+  {
+   "src": "verifyTrio@280",
+   "trio": "---\ndis:a\n---\n---\n---\ndis:b\n---\n---\n",
+   "expected": [
+    {
+     "dis": "a"
+    },
+    {
+     "dis": "b"
+    }
+   ]
+  }
+ ],
+ "filter_parse": [
+  {
+   "src": "verifyParse@73",
+   "filter": "foo",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@74",
+   "filter": "foo->bar",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@75",
+   "filter": "foo->bar->baz",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@76",
+   "filter": "fooBar",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@77",
+   "filter": "foo7Bar",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@78",
+   "filter": "not",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@79",
+   "filter": "and",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@80",
+   "filter": "or",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@83",
+   "filter": "not foo",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@84",
+   "filter": " not  foo->bar ",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@85",
+   "filter": "not not",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@88",
+   "filter": "x==true",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@89",
+   "filter": "x==false",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@92",
+   "filter": "x==\"hi\"",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@93",
+   "filter": "x!=\"\\\"hi\\\"\"",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@94",
+   "filter": " x ==  \"_\\uabcd_\\n_\"",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@95",
+   "filter": "x->y->z==\"hi\"",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@96",
+   "filter": "not==\"hi\"",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@99",
+   "filter": "uri==`http://foo/?bar`",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@100",
+   "filter": "uri==`file name`",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@101",
+   "filter": "uri == `foo bar`",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@104",
+   "filter": "num < 4",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@105",
+   "filter": "num <= -99",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@106",
+   "filter": "num > 0xabcd",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@107",
+   "filter": "num >= 0xabcd_0123",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@110",
+   "filter": "num < 4.0",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@111",
+   "filter": "num <= -9.4",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@112",
+   "filter": "num > 4e5",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@113",
+   "filter": "num >= 1.6e+4",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@114",
+   "filter": "num >= 1.6e-8",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@115",
+   "filter": "s->num >= 1.6e-8",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@118",
+   "filter": "x < 5ns",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@119",
+   "filter": "x < 10kg",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@120",
+   "filter": "x < -9sec",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@121",
+   "filter": "x < 2.5hr",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@124",
+   "filter": "foo < 2009-10-30",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@125",
+   "filter": "foo < 8:30",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@126",
+   "filter": "foo < 13:00:00",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@140",
+   "filter": "a and b",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@141",
+   "filter": "a and b and c == 3",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@144",
+   "filter": "a or b",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@145",
+   "filter": "a or b or c == 3",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@148",
+   "filter": "(a)",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@149",
+   "filter": "(a) and (b)",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@150",
+   "filter": "(a) or (b) or (c == 3)",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@153",
+   "filter": "^air-output",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@156",
+   "filter": "Rtu",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@157",
+   "filter": "ph::Equip",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@158",
+   "filter": "ph.points::AirTempSensor",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@159",
+   "filter": "x.y.z::Foo",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@160",
+   "filter": "a.b.c.d::Foo",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@161",
+   "filter": "a.b.c.d.e::Foo",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@168",
+   "filter": "a and b or c",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@169",
+   "filter": "a or b and c",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@170",
+   "filter": "a and b or c and d",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@171",
+   "filter": "a and (b or c) and d",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@172",
+   "filter": "a or (b and c) or d",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@175",
+   "filter": "a // and foo==5",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@254",
+   "filter": "a->b",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@260",
+   "filter": "a->b->c",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@267",
+   "filter": "not a->b->c->d",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@275",
+   "filter": "a->b == 2",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@276",
+   "filter": "a->b != 2",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@277",
+   "filter": "a->b < 2",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@278",
+   "filter": "a->b <= 2",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@279",
+   "filter": "a->b >= 2",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@280",
+   "filter": "a->b > 2",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@128 (dt literal)",
+   "filter": "foo < 2016-02-22T08:43:12.905-05:00 New_York",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@133 (Ref.gen)",
+   "filter": "author == @1f2e3d4c-5b6a7980",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@135",
+   "filter": "author == @foo:bar-baz",
+   "ok": true
+  },
+  {
+   "src": "verifyParse@137",
+   "filter": "id==@1ec5d86e-8ea2ba5a",
+   "ok": true
+  }
+ ],
+ "filter_parse_errs": [
+  {
+   "src": "verifyParseErr@289",
+   "filter": "",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@290",
+   "filter": "n:",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@291",
+   "filter": "n-foo",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@292",
+   "filter": "n->",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@293",
+   "filter": "(x",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@294",
+   "filter": "(x and",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@295",
+   "filter": "n==",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@296",
+   "filter": "n==\"..",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@297",
+   "filter": "n==`..",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@298",
+   "filter": "foo==Foo(\"xxx\")",
+   "ok": false
+  },
+  {
+   "src": "verifyParseErr@299",
+   "filter": "n=3x5",
+   "ok": false
+  }
+ ],
+ "filter_eval": [
+  {
+   "src": "FilterTest.testInclude",
+   "records": [
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "a"
+     },
+     "dis": "a",
+     "num": 10,
+     "date": {
+      "_kind": "date",
+      "val": "2016-01-01"
+     },
+     "foo": "baz"
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "b"
+     },
+     "dis": "b",
+     "num": 20,
+     "date": {
+      "_kind": "date",
+      "val": "2016-01-02"
+     },
+     "foo": 12,
+     "ref": {
+      "_kind": "ref",
+      "val": "a"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "c"
+     },
+     "dis": "c",
+     "num": 30,
+     "date": {
+      "_kind": "date",
+      "val": "2016-01-03"
+     },
+     "foo": 13,
+     "ref": {
+      "_kind": "ref",
+      "val": "b"
+     },
+     "thru": "c"
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "d"
+     },
+     "dis": "d",
+     "num": 30,
+     "date": {
+      "_kind": "date",
+      "val": "2016-01-03"
+     },
+     "ref": {
+      "_kind": "ref",
+      "val": "c"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "e"
+     },
+     "dis": "e",
+     "num": 40,
+     "date": {
+      "_kind": "date",
+      "val": "2016-01-06"
+     },
+     "ref": {
+      "thru": "e"
+     }
+    }
+   ],
+   "cases": [
+    {
+     "filter": "dis",
+     "expected": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "foo",
+     "expected": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "not dis",
+     "expected": []
+    },
+    {
+     "filter": "not foo",
+     "expected": [
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "dis  ==  \"c\"",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "num==30",
+     "expected": [
+      "c",
+      "d"
+     ]
+    },
+    {
+     "filter": "date==2016-01-02",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "foo==12",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "dis !=  \"c\"",
+     "expected": [
+      "a",
+      "b",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "num!=30",
+     "expected": [
+      "a",
+      "b",
+      "e"
+     ]
+    },
+    {
+     "filter": "date != 2016-01-02",
+     "expected": [
+      "a",
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "foo != 13",
+     "expected": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "filter": "dis < \"c\"",
+     "expected": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "filter": "num < 20",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "date < 2016-01-04",
+     "expected": [
+      "a",
+      "b",
+      "c",
+      "d"
+     ]
+    },
+    {
+     "filter": "foo < 13",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "foo < \"c\"",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "dis <= \"c\"",
+     "expected": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "num <= 20",
+     "expected": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "filter": "date <= 2016-01-02",
+     "expected": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "filter": "foo <= 13",
+     "expected": [
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "foo <= \"baz\"",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "dis > \"c\"",
+     "expected": [
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "num > 20",
+     "expected": [
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "date > 2016-01-02",
+     "expected": [
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "foo > 12",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "foo > \"a\"",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "dis >= \"c\"",
+     "expected": [
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "num >= 20",
+     "expected": [
+      "b",
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "date >= 2016-01-02",
+     "expected": [
+      "b",
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "foo >= 12",
+     "expected": [
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "foo >= \"baz\"",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "dis==\"c\" or num==30",
+     "expected": [
+      "c",
+      "d"
+     ]
+    },
+    {
+     "filter": "dis==\"c\" and num==30",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "dis==\"c\" or num==30 or dis==\"b\"",
+     "expected": [
+      "b",
+      "c",
+      "d"
+     ]
+    },
+    {
+     "filter": "dis==\"c\" and num==30 and foo==13",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "dis==\"c\" and num==30 and foo==12",
+     "expected": []
+    },
+    {
+     "filter": "dis==\"c\" and num==30 or foo==12",
+     "expected": [
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "(dis==\"c\" or num==30) and not foo",
+     "expected": [
+      "d"
+     ]
+    },
+    {
+     "filter": "(num==30 and foo) or (num <= 10)",
+     "expected": [
+      "a",
+      "c"
+     ]
+    },
+    {
+     "filter": "ref->dis==\"a\"",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "ref->ref->dis==\"a\"",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "ref->ref->ref->dis==\"a\"",
+     "expected": [
+      "d"
+     ]
+    },
+    {
+     "filter": "ref->num <= 20",
+     "expected": [
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "ref->thru",
+     "expected": [
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "ref->thru==\"e\"",
+     "expected": [
+      "e"
+     ]
+    },
+    {
+     "filter": "^foo-bar",
+     "expected": []
+    },
+    {
+     "filter": "^foo",
+     "expected": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "^foo-thru",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "None",
+     "expected": []
+    },
+    {
+     "filter": "Dict",
+     "expected": []
+    }
+   ]
+  },
+  {
+   "src": "FilterTest.testIncludeNumbers",
+   "records": [
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "a"
+     },
+     "dis": "a",
+     "num": 75
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "b"
+     },
+     "dis": "b",
+     "num": {
+      "_kind": "number",
+      "val": 75,
+      "unit": "°F"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "c"
+     },
+     "dis": "c",
+     "num": {
+      "_kind": "number",
+      "val": 2,
+      "unit": "min"
+     }
+    }
+   ],
+   "cases": [
+    {
+     "filter": "num==75",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "num==75°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num==75°C",
+     "expected": []
+    },
+    {
+     "filter": "num==2min",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "num==120sec",
+     "expected": []
+    },
+    {
+     "filter": "num > 70",
+     "expected": [
+      "a"
+     ]
+    },
+    {
+     "filter": "num > 70°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num >= 70°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num >= 75°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num <  80°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num <= 80°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num <= 75°F",
+     "expected": [
+      "b"
+     ]
+    },
+    {
+     "filter": "num > 70°C",
+     "expected": []
+    },
+    {
+     "filter": "num > 1min",
+     "expected": [
+      "c"
+     ]
+    },
+    {
+     "filter": "num > 60sec",
+     "expected": []
+    },
+    {
+     "filter": "dis == 75",
+     "expected": []
+    },
+    {
+     "filter": "dis >  75",
+     "expected": []
+    },
+    {
+     "filter": "dis <  75",
+     "expected": []
+    }
+   ]
+  },
+  {
+   "src": "FilterTest.testIncludeList",
+   "records": [
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "a"
+     },
+     "dis": "a",
+     "str": "q",
+     "ref": {
+      "_kind": "ref",
+      "val": "a"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "b"
+     },
+     "dis": "b",
+     "str": [
+      "q"
+     ],
+     "ref": [
+      {
+       "_kind": "ref",
+       "val": "a"
+      }
+     ]
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "c"
+     },
+     "dis": "c",
+     "str": [
+      "q",
+      "r"
+     ],
+     "ref": [
+      {
+       "_kind": "ref",
+       "val": "a"
+      },
+      {
+       "_kind": "ref",
+       "val": "b"
+      }
+     ],
+     "air": {
+      "_kind": "marker"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "d"
+     },
+     "dis": "d",
+     "str": "q",
+     "ref": [
+      {
+       "_kind": "ref",
+       "val": "b"
+      },
+      {
+       "_kind": "ref",
+       "val": "c"
+      }
+     ],
+     "water": {
+      "_kind": "marker"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "e"
+     },
+     "dis": "e",
+     "refx": {
+      "_kind": "ref",
+      "val": "c"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "f"
+     },
+     "dis": "f",
+     "refx": [
+      {
+       "_kind": "ref",
+       "val": "c"
+      }
+     ]
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "g"
+     },
+     "dis": "g",
+     "refx": [
+      {
+       "_kind": "ref",
+       "val": "d"
+      }
+     ]
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "h"
+     },
+     "dis": "h",
+     "refx": [
+      {
+       "_kind": "ref",
+       "val": "c"
+      },
+      {
+       "_kind": "ref",
+       "val": "d"
+      }
+     ]
+    }
+   ],
+   "cases": [
+    {
+     "filter": "str==\"q\"",
+     "expected": [
+      "a",
+      "d"
+     ]
+    },
+    {
+     "filter": "ref==@a",
+     "expected": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "ref->dis==\"a\"",
+     "expected": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    {
+     "filter": "refx",
+     "expected": [
+      "e",
+      "f",
+      "g",
+      "h"
+     ]
+    },
+    {
+     "filter": "refx==@c",
+     "expected": [
+      "e",
+      "f",
+      "h"
+     ]
+    },
+    {
+     "filter": "refx->dis==\"c\"",
+     "expected": [
+      "e",
+      "f",
+      "h"
+     ]
+    },
+    {
+     "filter": "refx->ref",
+     "expected": [
+      "e",
+      "f",
+      "g",
+      "h"
+     ]
+    },
+    {
+     "filter": "refx->ref==@a",
+     "expected": [
+      "e",
+      "f",
+      "h"
+     ]
+    },
+    {
+     "filter": "refx->air",
+     "expected": [
+      "e",
+      "f",
+      "h"
+     ]
+    },
+    {
+     "filter": "refx->water",
+     "expected": [
+      "g",
+      "h"
+     ]
+    },
+    {
+     "filter": "not refx->air",
+     "expected": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "g",
+      "h"
+     ]
+    }
+   ]
+  },
+  {
+   "src": "FilterTest.testIncludeDateTime",
+   "records": [
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "a"
+     },
+     "dis": "a",
+     "ts": {
+      "_kind": "dateTime",
+      "val": "2020-09-01T01:00:00-04:00",
+      "tz": "New_York"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "b"
+     },
+     "dis": "b",
+     "ts": {
+      "_kind": "dateTime",
+      "val": "2020-09-01T02:00:00-04:00",
+      "tz": "New_York"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "c"
+     },
+     "dis": "c",
+     "ts": {
+      "_kind": "dateTime",
+      "val": "2020-09-02T03:00:00-04:00",
+      "tz": "New_York"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "d"
+     },
+     "dis": "d",
+     "ts": {
+      "_kind": "dateTime",
+      "val": "2020-09-02T04:00:00-04:00",
+      "tz": "New_York"
+     }
+    },
+    {
+     "id": {
+      "_kind": "ref",
+      "val": "e"
+     },
+     "dis": "e",
+     "ts": {
+      "_kind": "dateTime",
+      "val": "2020-09-03T02:00:00-04:00",
+      "tz": "New_York"
+     }
+    }
+   ],
+   "cases": [
+    {
+     "filter": "ts==2020-09-02",
+     "expected": []
+    },
+    {
+     "filter": "ts == \"New_York\"",
+     "expected": []
+    },
+    {
+     "filter": "ts->bad == 2020-09-02",
+     "expected": []
+    },
+    {
+     "filter": "ts->date==2020-09-02",
+     "expected": [
+      "c",
+      "d"
+     ]
+    },
+    {
+     "filter": "ts->date <= 2020-09-02",
+     "expected": [
+      "a",
+      "b",
+      "c",
+      "d"
+     ]
+    },
+    {
+     "filter": "ts->date >= 2020-09-02",
+     "expected": [
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "ts->date->foo >= 2020-09-02",
+     "expected": []
+    },
+    {
+     "filter": "ts->time == 02:00",
+     "expected": [
+      "b",
+      "e"
+     ]
+    },
+    {
+     "filter": "ts->time <= 03:00",
+     "expected": [
+      "a",
+      "b",
+      "c",
+      "e"
+     ]
+    },
+    {
+     "filter": "ts->time > 03:00",
+     "expected": [
+      "d"
+     ]
+    },
+    {
+     "filter": "ts->tz == \"New_York\"",
+     "expected": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+     ]
+    },
+    {
+     "filter": "ts->tz == \"Chicago\"",
+     "expected": []
+    }
+   ]
+  }
+ ]
+}

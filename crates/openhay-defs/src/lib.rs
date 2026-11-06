@@ -12,6 +12,7 @@ use libhaystack::filter::eval::EvalContext;
 use libhaystack::filter::path::Path;
 use libhaystack::filter::{Eval, Filter, PathResolver};
 use libhaystack::val::{Dict, Grid, Ref, Symbol, Value};
+use std::collections::HashMap;
 use std::sync::LazyLock;
 
 const DEFS_ZINC: &str = include_str!("../defs/ph-4.0.0.zinc");
@@ -43,17 +44,38 @@ pub fn namespace() -> &'static Namespace {
     &NS
 }
 
-/// Paths walk nested dicts; defs refer to each other by Symbol, never Ref,
-/// so there is nothing to dereference.
-struct DictPaths;
+/// Resolves filter paths: a segment reads a tag from a Dict, and a Ref is
+/// first looked up among the rows being filtered (by `id`), the way a
+/// Haystack server resolves `equipRef->dis` against its own records.
+struct RowPaths<'a>(HashMap<String, &'a Dict>);
 
-impl PathResolver for DictPaths {
+impl<'a> RowPaths<'a> {
+    fn new(rows: &'a [Dict]) -> Self {
+        let mut by_id = HashMap::new();
+        for d in rows {
+            if let Some(Value::Ref(r)) = d.get("id") {
+                by_id.insert(r.value().to_string(), d);
+            }
+        }
+        Self(by_id)
+    }
+
+    fn deref(&self, v: &Value) -> Option<Dict> {
+        match v {
+            Value::Dict(d) => Some(d.clone()),
+            Value::Ref(r) => self.0.get(r.value()).map(|d| (*d).clone()),
+            _ => None,
+        }
+    }
+}
+
+impl PathResolver for RowPaths<'_> {
     fn resolve_for(&self, root: &Dict, path: &Path) -> Value {
         let mut cur = Value::Dict(root.clone());
         for seg in path.iter() {
-            cur = match &cur {
-                Value::Dict(d) => d.get(&seg.to_string()).cloned().unwrap_or(Value::Null),
-                _ => return Value::Null,
+            cur = match self.deref(&cur) {
+                Some(d) => d.get(&seg.to_string()).cloned().unwrap_or(Value::Null),
+                None => return Value::Null,
             };
         }
         cur
@@ -63,19 +85,21 @@ impl PathResolver for DictPaths {
         Value::Null
     }
 
-    fn resolve_ref(&self, _reference: &Ref) -> Option<Dict> {
-        None
+    fn resolve_ref(&self, reference: &Ref) -> Option<Dict> {
+        self.0.get(reference.value()).map(|d| (*d).clone())
     }
 }
 
 /// Indices of `rows` that match `filter`, evaluated against the bundled
-/// namespace. Refs aren't followed (`a->b` only walks nested dicts).
+/// namespace. Refs in paths (`equipRef->dis`) resolve to other rows in the
+/// same slice by their `id`.
 pub fn filter_indices(filter: &str, rows: &[Dict]) -> Result<Vec<usize>, DefsError> {
     let f = Filter::try_from(filter).map_err(|e| DefsError::Filter(e.to_string()))?;
+    let paths = RowPaths::new(rows);
     Ok(rows
         .iter()
         .enumerate()
-        .filter(|(_, d)| f.eval(&EvalContext::make(d, &NS, &DictPaths)))
+        .filter(|(_, d)| f.eval(&EvalContext::make(d, &NS, &paths)))
         .map(|(i, _)| i)
         .collect())
 }
