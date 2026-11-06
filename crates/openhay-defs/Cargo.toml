@@ -1,0 +1,13 @@
+[package]
+name = "openhay-defs"
+description = "The Project Haystack 4 defs namespace (ph, phScience, phIoT, phIct) and the defs/libs/filetypes ops"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+include = ["src/**", "defs/**", "Cargo.toml"]
+
+[dependencies]
+libhaystack.workspace = true
+openhay-codec.workspace = true
+thiserror.workspace = true

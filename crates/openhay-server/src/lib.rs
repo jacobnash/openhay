@@ -467,6 +467,9 @@ const OPS: &[(&str, &str)] = &[
     ("watchPoll", "Poll watch for changes"),
     ("invokeAction", "Invoke action on a record"),
     ("close", "Close the current session"),
+    ("defs", "Read def records from the Haystack 4 namespace"),
+    ("libs", "Read lib def records"),
+    ("filetypes", "Read filetype def records"),
 ];
 
 fn first_row(g: &Grid) -> Dict {
@@ -734,6 +737,13 @@ async fn dispatch<B: Backend>(s: &Server<B>, op: &str, req: Grid) -> OpResult<Gr
             b.invoke_action(&id, &action, first_row(&req)).await
         }
         "close" => Ok(Grid::make_empty()),
+        "defs" | "libs" | "filetypes" => {
+            let row = first_row(&req);
+            let filter = get_str(&row, "filter");
+            let limit = get_num(&row, "limit").map(|n| n.max(0.0) as usize);
+            openhay_defs::op(op, filter.as_deref(), limit)
+                .map_err(|e| OpError::BadRequest(e.to_string()))
+        }
         _ => Err(OpError::BadRequest(format!("unknown op {op}"))),
     }
 }

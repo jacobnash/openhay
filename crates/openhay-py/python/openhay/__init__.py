@@ -327,6 +327,24 @@ def encode_grid(grid: Grid, format: str = "zinc") -> str:
     return _native.convert(json.dumps(to_hayson(grid)), format, "hayson")
 
 
+def defs(op: str = "defs", filter: str | None = None, limit: int | None = None) -> Grid:
+    """The bundled Project Haystack 4 defs namespace: ``op`` is ``defs``
+    (every def), ``libs`` or ``filetypes``, optionally filtered
+    (``lib==^lib:phIoT``) and limited. What a server's defs/libs/filetypes
+    ops return."""
+    return _grid_from_hayson(json.loads(_native.defs_op(op, filter, limit)))
+
+
+def filter_rows(filter: str, rows: Iterable[dict]) -> list[dict]:
+    """The rows (plain dicts of openhay values) that match a Haystack
+    filter. Refs aren't followed; ``a->b`` walks nested dicts only."""
+    rows = list(rows)
+    if not rows:
+        return []
+    idx = _native.filter_indices(filter, json.dumps(to_hayson(Grid.from_rows(rows))))
+    return [rows[i] for i in idx]
+
+
 def to_zinc(value: Any) -> str:
     """One value in Zinc syntax, e.g. for a GET query parameter."""
     return _native.hayson_value_to_zinc(json.dumps(to_hayson(value)))
@@ -375,6 +393,15 @@ class Client:
         if limit is not None:
             row["limit"] = Number(limit)
         return self.call("read", Grid.from_rows([row])).rows
+
+    def defs(self, op: str = "defs", filter: str | None = None, limit: int | None = None) -> list[dict]:
+        """A server's Haystack 4 namespace: ``op`` is defs, libs or filetypes."""
+        row: dict = {}
+        if filter is not None:
+            row["filter"] = filter
+        if limit is not None:
+            row["limit"] = Number(limit)
+        return self.call(op, Grid.from_rows([row]) if row else None).rows
 
     def read_ids(self, ids: Iterable[Ref | str]) -> list[dict | None]:
         refs = [i if isinstance(i, Ref) else Ref(str(i).lstrip("@")) for i in ids]

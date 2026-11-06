@@ -106,6 +106,24 @@ def test_parse_auth_header():
     assert scheme == "SCRAM" and params == {"handshakeToken": "abc", "hash": "SHA-256"}
 
 
+def test_bundled_defs():
+    libs = sorted(r["def"].val for r in oh.defs("libs"))
+    assert libs == ["lib:ph", "lib:phIct", "lib:phIoT", "lib:phScience"]
+    site = oh.defs("defs", "def==^site").rows
+    assert len(site) == 1 and oh.Symbol("entity") in site[0]["is"]
+    assert len(oh.defs("defs", limit=5)) == 5
+    with pytest.raises(ValueError, match="filter"):
+        oh.defs("defs", "def ==")
+
+
+def test_filter_rows():
+    rows = [{"id": oh.Ref("a"), "ahu": oh.MARKER, "dis": "A"}, {"id": oh.Ref("b"), "dis": "B", "n": oh.Number(3)}]
+    assert oh.filter_rows("ahu", rows) == rows[:1]
+    assert oh.filter_rows("n > 2", rows) == rows[1:]
+    assert oh.filter_rows('dis == "B" or ahu', rows) == rows
+    assert oh.filter_rows("x", []) == []
+
+
 # ------------------------------------------------------------- live client
 
 
@@ -172,6 +190,7 @@ def test_client_ops(server, fmt):
     assert changed[0]["curVal"] == oh.Number(72.0)
     c.point_write("p2", 8, None)
     c.watch_close(wid)
+    assert len(c.defs("libs")) == 4 and len(c.defs("defs", "def==^ahu")) == 1
 
     with pytest.raises(oh.HaystackError):
         c.read("point and (")

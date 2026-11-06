@@ -10,6 +10,7 @@ repository.workspace = true
 libhaystack.workspace = true
 openhay-codec.workspace = true
 openhay-auth.workspace = true
+openhay-defs.workspace = true
 axum = "0.8"
 tokio.workspace = true
 thiserror.workspace = true

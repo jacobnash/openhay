@@ -12,8 +12,9 @@ need to talk to real servers and to *be* one.
 | `openhay-codec` | One `Format` enum covering **Zinc, JSON v3** (SkySpark 3 / older nhaystack prefixed strings), **Hayson** (JSON v4), **Trio** and CSV. Also MIME negotiation and format sniffing. |
 | `openhay-auth` | Haystack auth: `HELLO` → SCRAM-SHA-256 → `BEARER authToken`. Client and server halves, checked against the RFC 7677 test vector. `ScramCredentials::from_salted_password` serves SCRAM straight from existing PBKDF2-SHA256 password hashes, so no password reset is needed. |
 | `openhay-client` | Async client for SkySpark, Haxall, nhaystack or anything else: login, `about`, `read` (filter or ids), `nav`, `hisRead`, `hisWrite`, `pointWrite` (+ priority array), `watchSub`/`Poll`/`Unsub`, `invokeAction`. |
+| `openhay-defs` | The official Project Haystack 4.0.0 defs namespace (`ph`, `phScience`, `phIoT`, `phIct`; 719 defs), bundled, plus the `defs`/`libs`/`filetypes` ops and a filter evaluator that knows the namespace (`lib==^lib:phIoT`). |
 | `openhay-server` | Implement one `Backend` trait over your storage and get the whole op surface. It serves both `/api/{op}` (Haxall layout) and `/api/{project}/{op}` (SkySpark layout), with SCRAM auth, content negotiation, Haystack error grids, and **server-managed watches with bounded memory**. `MemBackend` is a complete in-memory implementation. |
-| `openhay-py` | Python package `openhay` (PyO3, abi3 wheel for Python 3.10+). It includes value types, `decode_grid`/`encode_grid` for every format, a blocking `Client`, and the SCRAM server half for any Python web stack. |
+| `openhay-py` | Python package `openhay` (PyO3, abi3 wheel for Python 3.10+). It includes value types, `decode_grid`/`encode_grid` for every format, a blocking `Client`, the SCRAM server half for any Python web stack, the bundled defs (`oh.defs("libs")`) and an in-memory filter (`oh.filter_rows`). |
 | `hay-cli` | The `hay` binary: `convert`, `read`, `his`, `call`, and `serve` (turn a Trio/Zinc file into a live Haystack server). |
 
 ## Quick start
@@ -70,7 +71,7 @@ impl Backend for MyStore {
 
 ## Status
 
-The four crates above work, with end-to-end tests that run the client against the server over real HTTP in
+The crates above work, with end-to-end tests that run the client against the server over real HTTP in
 Zinc, JSON v3 and Hayson.
 
 Roadmap:
@@ -79,9 +80,9 @@ Roadmap:
 - [ ] Publish wheels to PyPI (CI with maturin-action)
 - [ ] TypeScript / WASM bindings
 - [ ] `openhay-ws`: an open WebSocket transport with server-push watches
-- [ ] Haystack 4 defs namespace exposed through `defs`/`libs` ops
+- [x] Haystack 4 defs namespace exposed through `defs`/`libs`/`filetypes` ops
 - [ ] Xeto: parser and `xeto → anything` converter (Trio defs, JSON Schema, SHACL, TS/Python types)
-- [ ] Conformance suite against Haxall (reference server *and* client) in Docker
+- [x] Conformance suite against Haxall in Docker (runs in [Baler](https://github.com/jacobnash/Baler)'s CI: every op, every format, openhay and phable as clients)
 
 ## Known limitations
 

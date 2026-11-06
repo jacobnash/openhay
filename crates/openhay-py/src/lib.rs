@@ -270,6 +270,24 @@ impl NativeClient {
     }
 }
 
+/// The `defs`/`libs`/`filetypes` op over the bundled Haystack 4 namespace,
+/// as a Hayson grid.
+#[pyfunction]
+#[pyo3(signature = (op, filter=None, limit=None))]
+fn defs_op(op: &str, filter: Option<&str>, limit: Option<usize>) -> PyResult<String> {
+    let g =
+        openhay_defs::op(op, filter, limit).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    openhay_codec::encode_grid(Format::Hayson, &g).map_err(codec_err)
+}
+
+/// Indices of a Hayson grid's rows that match a Haystack filter (evaluated
+/// with the defs namespace, so `^symbol` comparisons work).
+#[pyfunction]
+fn filter_indices(filter: &str, grid_hayson: &str) -> PyResult<Vec<usize>> {
+    let g = grid_from_hayson(grid_hayson)?;
+    openhay_defs::filter_indices(filter, &g.rows).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 #[pymodule]
 fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -285,6 +303,8 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(b64url_decode, m)?)?;
     m.add_function(wrap_pyfunction!(random_token, m)?)?;
     m.add_function(wrap_pyfunction!(parse_auth_header, m)?)?;
+    m.add_function(wrap_pyfunction!(defs_op, m)?)?;
+    m.add_function(wrap_pyfunction!(filter_indices, m)?)?;
     m.add_class::<ScramCredentials>()?;
     m.add_class::<ScramServer>()?;
     m.add_class::<NativeClient>()?;

@@ -142,6 +142,28 @@ async fn read_filter_with_ref_paths() {
 }
 
 #[tokio::test]
+async fn defs_libs_filetypes() {
+    let base = start(false).await;
+    for fmt in [Format::Zinc, Format::Hayson] {
+        let mut c = Client::new(&base);
+        c.format = fmt;
+        assert_eq!(
+            c.defs("libs", None, None).await.unwrap().len(),
+            4,
+            "{fmt:?}"
+        );
+        assert_eq!(c.defs("defs", None, None).await.unwrap().len(), 719);
+        let site = c.defs("defs", Some("def==^site"), None).await.unwrap();
+        assert_eq!(site.len(), 1);
+        assert_eq!(c.defs("filetypes", None, Some(2)).await.unwrap().len(), 2);
+        assert!(matches!(
+            c.defs("defs", Some("def =="), None).await,
+            Err(ClientError::Server(_))
+        ));
+    }
+}
+
+#[tokio::test]
 async fn bad_filter_is_error_grid() {
     let c = Client::new(&start(false).await);
     assert!(matches!(

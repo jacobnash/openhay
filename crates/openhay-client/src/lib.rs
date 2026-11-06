@@ -254,15 +254,38 @@ impl Client {
     }
 
     pub async fn read(&self, filter: &str, limit: Option<usize>) -> Result<Vec<Dict>> {
+        self.filtered("read", Some(filter), limit).await
+    }
+
+    /// The Haystack 4 namespace ops: `op` is `defs`, `libs` or `filetypes`.
+    pub async fn defs(
+        &self,
+        op: &str,
+        filter: Option<&str>,
+        limit: Option<usize>,
+    ) -> Result<Vec<Dict>> {
+        self.filtered(op, filter, limit).await
+    }
+
+    async fn filtered(
+        &self,
+        op: &str,
+        filter: Option<&str>,
+        limit: Option<usize>,
+    ) -> Result<Vec<Dict>> {
         let mut d = Dict::new();
-        d.insert("filter".into(), Value::make_str(filter));
+        if let Some(f) = filter {
+            d.insert("filter".into(), Value::make_str(f));
+        }
         if let Some(l) = limit {
             d.insert("limit".into(), Value::make_number(l as f64));
         }
-        Ok(self
-            .call("read", &Grid::make_from_dicts(vec![d]))
-            .await?
-            .rows)
+        let req = if d.is_empty() {
+            Grid::make_empty()
+        } else {
+            Grid::make_from_dicts(vec![d])
+        };
+        Ok(self.call(op, &req).await?.rows)
     }
 
     /// Read by id. Missing ids come back as `None`.

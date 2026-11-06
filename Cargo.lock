@@ -900,6 +900,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "openhay-defs"
+version = "0.1.0"
+dependencies = [
+ "libhaystack",
+ "openhay-codec",
+ "thiserror",
+]
+
+[[package]]
 name = "openhay-py"
 version = "0.1.0"
 dependencies = [
@@ -907,6 +916,7 @@ dependencies = [
  "openhay-auth",
  "openhay-client",
  "openhay-codec",
+ "openhay-defs",
  "pyo3",
  "serde_json",
  "tokio",
@@ -923,6 +933,7 @@ dependencies = [
  "openhay-auth",
  "openhay-client",
  "openhay-codec",
+ "openhay-defs",
  "thiserror",
  "tokio",
 ]
