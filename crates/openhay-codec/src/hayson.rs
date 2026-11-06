@@ -138,14 +138,24 @@ pub fn decode_value(j: &J) -> crate::Result<Value> {
                 }
                 Value::make_dict(d)
             }
-            Some("number") if o.get("val").is_some_and(J::is_string) => {
-                let x = match o["val"].as_str().unwrap_or_default() {
-                    "NaN" => f64::NAN,
-                    "INF" => f64::INFINITY,
-                    "-INF" => f64::NEG_INFINITY,
-                    s => s
-                        .parse()
-                        .map_err(|_| crate::CodecError::Invalid(format!("bad number {s:?}")))?,
+            // All numbers are ours: libhaystack's serde rejects "NaN"/"INF"
+            // strings and fails the whole grid on a unit outside the Haystack
+            // unit database. An unknown unit is dropped (libhaystack's Number
+            // can only hold database units) rather than losing the response.
+            Some("number") => {
+                let x = match o.get("val") {
+                    Some(J::String(s)) => match s.as_str() {
+                        "NaN" => f64::NAN,
+                        "INF" => f64::INFINITY,
+                        "-INF" => f64::NEG_INFINITY,
+                        s => s
+                            .parse()
+                            .map_err(|_| crate::CodecError::Invalid(format!("bad number {s:?}")))?,
+                    },
+                    Some(J::Number(n)) => n.as_f64().unwrap_or(f64::NAN),
+                    other => {
+                        return Err(crate::CodecError::Invalid(format!("bad number {other:?}")));
+                    }
                 };
                 match o
                     .get("unit")
@@ -215,4 +225,20 @@ pub fn decode_value(j: &J) -> crate::Result<Value> {
         },
         other => serde_json::from_value(other.clone())?,
     })
+}
+
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
+
+    #[test]
+    fn unknown_units_keep_the_number() {
+        let v =
+            decode_value(&serde_json::json!({"_kind": "number", "val": 0.5, "unit": "fraction"}))
+                .unwrap();
+        assert_eq!(v, Value::make_number(0.5));
+        let v =
+            decode_value(&serde_json::json!({"_kind": "number", "val": 72, "unit": "°F"})).unwrap();
+        assert!(matches!(v, Value::Number(n) if n.unit.is_some()));
+    }
 }
