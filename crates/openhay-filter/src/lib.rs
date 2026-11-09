@@ -91,7 +91,11 @@ impl Resolver for NoRefs {
 impl Filter {
     pub fn parse(text: &str) -> Result<Filter, ParseError> {
         let toks = lex(text)?;
-        let mut p = Parser { toks, i: 0 };
+        let mut p = Parser {
+            toks,
+            i: 0,
+            depth: 0,
+        };
         let f = p.cond_or()?;
         if p.cur() != &Tok::Eof {
             return Err(p.err(&format!("unexpected {}", p.cur())));
@@ -407,9 +411,18 @@ fn literal(t: &str) -> Result<Value, String> {
 
 // ------------------------------------------------------------------ parser
 
+/// How deep a filter's `and`/`or` chains and parentheses may nest (each
+/// `or`, `and` and parenthesis is a level). Each level is a recursive call
+/// here and in matching, display and drop, so a filter from a client
+/// (`((((...`, a huge `a or a or ...`) can't be allowed to overflow the
+/// stack. Higher than the codecs' limit: `id==@a or id==@b or ...` over a
+/// couple of hundred ids is ordinary.
+pub const MAX_DEPTH: usize = 512;
+
 struct Parser {
     toks: Vec<(Tok, usize)>,
     i: usize,
+    depth: usize,
 }
 
 impl Parser {
@@ -440,7 +453,22 @@ impl Parser {
         matches!(self.cur(), Tok::Id(s) if s == kw)
     }
 
+    fn enter(&mut self) -> Result<(), ParseError> {
+        if self.depth >= MAX_DEPTH {
+            return Err(self.err(&format!("filter nested more than {MAX_DEPTH} levels deep")));
+        }
+        self.depth += 1;
+        Ok(())
+    }
+
     fn cond_or(&mut self) -> Result<Filter, ParseError> {
+        self.enter()?;
+        let f = self.cond_or_inner();
+        self.depth -= 1;
+        f
+    }
+
+    fn cond_or_inner(&mut self) -> Result<Filter, ParseError> {
         let lhs = self.cond_and()?;
         if !self.is_keyword("or") {
             return Ok(lhs);
@@ -450,6 +478,13 @@ impl Parser {
     }
 
     fn cond_and(&mut self) -> Result<Filter, ParseError> {
+        self.enter()?;
+        let f = self.cond_and_inner();
+        self.depth -= 1;
+        f
+    }
+
+    fn cond_and_inner(&mut self) -> Result<Filter, ParseError> {
         let lhs = self.term()?;
         if !self.is_keyword("and") {
             return Ok(lhs);
@@ -554,6 +589,23 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+
+    /// A filter can't nest past MAX_DEPTH (parentheses, `and`/`or` chains):
+    /// a parse error, not a stack overflow, for a client's `((((...`.
+    #[test]
+    fn nesting_is_limited() {
+        let parens = |n: usize| format!("{}a{}", "(".repeat(n), ")".repeat(n));
+        assert!(Filter::parse(&parens(20)).is_ok());
+        let err = Filter::parse(&parens(100_000)).unwrap_err();
+        assert!(err.msg.contains("nested more than"), "{}", err.msg);
+        // each parenthesis is two levels (or, and); a long or-chain one per term
+        assert!(Filter::parse(&parens(MAX_DEPTH / 2 - 1)).is_ok());
+        assert!(Filter::parse(&parens(MAX_DEPTH / 2 + 1)).is_err());
+        let ors = |n: usize| vec!["id==@x"; n].join(" or ");
+        assert!(Filter::parse(&ors(MAX_DEPTH - 1)).is_ok());
+        assert!(Filter::parse(&ors(MAX_DEPTH + 1)).is_err());
+        assert!(Filter::parse(&ors(200)).is_ok()); // a read by a couple of hundred ids
+    }
     use super::*;
     use std::collections::HashMap;
 

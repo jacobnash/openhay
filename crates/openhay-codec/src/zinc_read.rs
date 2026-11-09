@@ -56,10 +56,16 @@ pub fn read_tags(text: &str) -> Result<Dict> {
     Ok(d)
 }
 
+/// How deep lists, dicts and nested grids may go. Each level is a recursive
+/// call, so without a limit a hostile or broken server's `[[[[...` would
+/// overflow the stack (fuzz: zinc_scalar). Haystack data is a few levels deep.
+pub const MAX_DEPTH: usize = 64;
+
 struct Parser {
     s: Vec<char>,
     i: usize,
     line: usize,
+    depth: usize,
 }
 
 fn is_id_start(c: char) -> bool {
@@ -80,6 +86,7 @@ impl Parser {
             s: text.chars().collect(),
             i: 0,
             line: 1,
+            depth: 0,
         }
     }
 
@@ -307,6 +314,20 @@ impl Parser {
     // ------------------------------------------------------------- values
 
     fn val(&mut self) -> Result<Value> {
+        let nests = matches!(self.cur(), '[' | '{') || (self.cur() == '<' && self.peek(1) == '<');
+        if !nests {
+            return self.val_inner();
+        }
+        if self.depth >= MAX_DEPTH {
+            return Err(self.err(&format!("nested more than {MAX_DEPTH} levels deep")));
+        }
+        self.depth += 1;
+        let v = self.val_inner();
+        self.depth -= 1;
+        v
+    }
+
+    fn val_inner(&mut self) -> Result<Value> {
         let c = self.cur();
         match c {
             '<' if self.peek(1) == '<' => {

@@ -61,3 +61,34 @@ b: 2010-02-03U04:05:06Z UTC bar c: 2009-12-03T04:05:06Zo03T04:05:06ZoL ndon baz\
 2010-12-18T14:11:30.924Z\n273\n7.15625E-4kWh/fvu\u{b2}",
     );
 }
+
+/// fuzz zinc_scalar crash-c99ff83e: 3354 `[` overflowed the stack (one
+/// recursive call per level). Nesting is limited to MAX_DEPTH levels: past it
+/// a parse error, never a crash.
+#[test]
+fn zinc_nesting_is_limited() {
+    use openhay_codec::{decode_zinc_scalar, zinc_read::MAX_DEPTH};
+    assert!(decode_zinc_scalar(&"[".repeat(3354)).is_err());
+    let list = |n: usize| format!("{}1{}", "[".repeat(n), "]".repeat(n));
+    let dict =
+        |n: usize| format!("{}{}", "{a:".repeat(n), "}".repeat(n)).replacen("{a:}", "{a}", 1);
+    for (kind, make) in [("list", &list as &dyn Fn(usize) -> String), ("dict", &dict)] {
+        decode_zinc_scalar(&make(MAX_DEPTH)).unwrap_or_else(|e| panic!("{kind} at the limit: {e}"));
+        let err = decode_zinc_scalar(&make(MAX_DEPTH + 1))
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("nested more than"), "{kind}: {err}");
+    }
+    // nested grids count too, and a whole grid's cells are checked the same way
+    let grid = |n: usize| format!("{}1{}", "<<\nver:\"3.0\"\nx\n".repeat(n), "\n>>".repeat(n));
+    assert!(decode_zinc_scalar(&grid(2)).is_ok(), "{}", grid(2));
+    assert!(decode_zinc_scalar(&grid(MAX_DEPTH)).is_ok());
+    assert!(decode_zinc_scalar(&grid(MAX_DEPTH + 1)).is_err());
+    let deep = format!("ver:\"3.0\"\nx\n{}\n", list(MAX_DEPTH + 1));
+    assert!(decode_grid(Format::Zinc, &deep).is_err());
+    assert!(
+        decode_grid(Format::Trio, &format!("x: {}\n", list(MAX_DEPTH + 1)))
+            .map(|g| !matches!(g.rows[0].get("x"), Some(Value::List(_))))
+            .unwrap_or(true)
+    );
+}
