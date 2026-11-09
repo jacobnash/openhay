@@ -35,6 +35,7 @@ __all__ = [
     "decode_grid", "encode_grid", "to_zinc", "from_zinc", "sniff", "negotiate", "mime",
     "from_hayson", "to_hayson", "haystack_tz", "Client", "HaystackError", "AuthError",
     "ScramCredentials", "ScramServer", "b64url", "b64url_decode", "parse_auth_header", "random_token",
+    "tag",
 ]
 
 sniff = _native.sniff
@@ -471,3 +472,8 @@ class Client:
         meta = {"id": ref, "action": action}
         g = Grid.from_rows([args], meta=meta) if args else Grid(meta=meta, cols=[Col("empty")])
         return self.call("invokeAction", g)
+
+
+# openhay-tag (``openhay.tag.tag_point`` and friends), importable as an attribute.
+from . import tag  # noqa: E402
+

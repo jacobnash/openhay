@@ -306,6 +306,60 @@ impl NativeClient {
     }
 }
 
+// ------------------------------------------------------------------ tag
+
+/// openhay-tag: messy point names to Haystack tags. Use `openhay.tag`
+/// rather than this class directly.
+#[pyclass(frozen)]
+struct NativeTagger {
+    inner: openhay_tag::Tagger,
+}
+
+#[pymethods]
+impl NativeTagger {
+    #[new]
+    #[pyo3(signature = (overrides=None))]
+    fn new(overrides: Option<&str>) -> PyResult<Self> {
+        let inner = match overrides {
+            Some(o) => openhay_tag::Tagger::with_overrides(o)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?,
+            None => openhay_tag::Tagger::default(),
+        };
+        Ok(Self { inner })
+    }
+
+    /// Returns `(tags, rule, tokens, signals)`.
+    #[pyo3(signature = (label, description, units=None, object_type=None))]
+    fn tag_point(
+        &self,
+        label: &str,
+        description: &str,
+        units: Option<&str>,
+        object_type: Option<&str>,
+    ) -> (Vec<String>, Option<String>, Vec<String>, Vec<String>) {
+        let r = self.inner.tag_point(label, description, units, object_type);
+        (r.tags, r.rule, r.tokens, r.signals)
+    }
+
+    fn haystack_unit(&self, units: &str) -> Option<String> {
+        self.inner.haystack_unit(units)
+    }
+
+    /// `(id, match words, tags)` for every rule, in match order.
+    fn rules(&self) -> Vec<(String, Vec<String>, Vec<String>)> {
+        self.inner
+            .rules()
+            .iter()
+            .map(|r| (r.id.clone(), r.words.clone(), r.tags.clone()))
+            .collect()
+    }
+}
+
+#[pyfunction]
+fn tokenize(text: &str) -> Vec<String> {
+    openhay_tag::tokenize(text)
+}
+
 /// The `defs`/`libs`/`filetypes` op over the bundled Haystack 4 namespace,
 /// as a Hayson grid.
 #[pyfunction]
@@ -344,5 +398,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ScramCredentials>()?;
     m.add_class::<ScramServer>()?;
     m.add_class::<NativeClient>()?;
+    m.add_class::<NativeTagger>()?;
+    m.add_function(wrap_pyfunction!(tokenize, m)?)?;
     Ok(())
 }

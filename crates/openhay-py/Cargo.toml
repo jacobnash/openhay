@@ -17,6 +17,7 @@ openhay-codec.workspace = true
 openhay-auth.workspace = true
 openhay-defs.workspace = true
 openhay-client.workspace = true
+openhay-tag.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
 pyo3 = { version = "0.30", features = ["extension-module", "abi3-py310"] }

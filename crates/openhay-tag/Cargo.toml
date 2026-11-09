@@ -1,0 +1,12 @@
+[package]
+name = "openhay-tag"
+description = "Messy BAS point names to Haystack tags: tokenizer, abbreviation lexicon, units as evidence, most-specific rule match"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = { version = "0.8", default-features = false, features = ["parse"] }
+thiserror.workspace = true

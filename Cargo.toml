@@ -7,6 +7,7 @@ members = [
     "crates/openhay-client",
     "crates/openhay-filter",
     "crates/openhay-defs",
+    "crates/openhay-tag",
     "crates/openhay-server",
     "crates/hay-cli",
     "crates/openhay-py",
@@ -29,4 +30,5 @@ openhay-auth = { path = "crates/openhay-auth" }
 openhay-client = { path = "crates/openhay-client" }
 openhay-filter = { path = "crates/openhay-filter" }
 openhay-defs = { path = "crates/openhay-defs" }
+openhay-tag = { path = "crates/openhay-tag" }
 openhay-server = { path = "crates/openhay-server" }
