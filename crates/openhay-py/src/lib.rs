@@ -268,6 +268,96 @@ impl NativeClient {
             .map_err(client_err)?;
         openhay_codec::encode_grid(Format::Hayson, &grid).map_err(codec_err)
     }
+
+    /// Read by filter, following a paging server's `after` to the full set
+    /// (at most `limit`). Returns a Hayson grid of the rows.
+    #[pyo3(signature = (filter, limit=None))]
+    fn read(&self, py: Python<'_>, filter: &str, limit: Option<usize>) -> PyResult<String> {
+        let Self { inner, rt } = self;
+        let rows = py
+            .detach(|| rt.block_on(inner.read(filter, limit)))
+            .map_err(client_err)?;
+        openhay_codec::encode_grid(Format::Hayson, &Grid::make_from_dicts(rows)).map_err(codec_err)
+    }
+
+    /// One page of a read by filter. `after_hayson` is the previous page's
+    /// `after` as Hayson JSON. Returns the Hayson grid, meta included.
+    #[pyo3(signature = (filter, limit=None, after_hayson=None))]
+    fn read_page(
+        &self,
+        py: Python<'_>,
+        filter: &str,
+        limit: Option<usize>,
+        after_hayson: Option<&str>,
+    ) -> PyResult<String> {
+        let after: Option<Value> = after_hayson
+            .map(serde_json::from_str)
+            .transpose()
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let Self { inner, rt } = self;
+        let page = py
+            .detach(|| rt.block_on(inner.read_page(filter, limit, after.as_ref())))
+            .map_err(client_err)?;
+        let mut g = Grid::make_from_dicts(page.rows);
+        if !page.meta.is_empty() {
+            g.meta = Some(page.meta);
+        }
+        openhay_codec::encode_grid(Format::Hayson, &g).map_err(codec_err)
+    }
+}
+
+// ------------------------------------------------------------------ tag
+
+/// openhay-tag: messy point names to Haystack tags. Use `openhay.tag`
+/// rather than this class directly.
+#[pyclass(frozen)]
+struct NativeTagger {
+    inner: openhay_tag::Tagger,
+}
+
+#[pymethods]
+impl NativeTagger {
+    #[new]
+    #[pyo3(signature = (overrides=None))]
+    fn new(overrides: Option<&str>) -> PyResult<Self> {
+        let inner = match overrides {
+            Some(o) => openhay_tag::Tagger::with_overrides(o)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?,
+            None => openhay_tag::Tagger::default(),
+        };
+        Ok(Self { inner })
+    }
+
+    /// Returns `(tags, rule, tokens, signals)`.
+    #[pyo3(signature = (label, description, units=None, object_type=None))]
+    fn tag_point(
+        &self,
+        label: &str,
+        description: &str,
+        units: Option<&str>,
+        object_type: Option<&str>,
+    ) -> (Vec<String>, Option<String>, Vec<String>, Vec<String>) {
+        let r = self.inner.tag_point(label, description, units, object_type);
+        (r.tags, r.rule, r.tokens, r.signals)
+    }
+
+    fn haystack_unit(&self, units: &str) -> Option<String> {
+        self.inner.haystack_unit(units)
+    }
+
+    /// `(id, match words, tags)` for every rule, in match order.
+    fn rules(&self) -> Vec<(String, Vec<String>, Vec<String>)> {
+        self.inner
+            .rules()
+            .iter()
+            .map(|r| (r.id.clone(), r.words.clone(), r.tags.clone()))
+            .collect()
+    }
+}
+
+#[pyfunction]
+fn tokenize(text: &str) -> Vec<String> {
+    openhay_tag::tokenize(text)
 }
 
 /// The `defs`/`libs`/`filetypes` op over the bundled Haystack 4 namespace,
@@ -367,5 +457,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ScramCredentials>()?;
     m.add_class::<ScramServer>()?;
     m.add_class::<NativeClient>()?;
+    m.add_class::<NativeTagger>()?;
+    m.add_function(wrap_pyfunction!(tokenize, m)?)?;
     Ok(())
 }

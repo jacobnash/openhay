@@ -1,0 +1,494 @@
+# Canonical words (see lexicon.toml) -> Haystack 4 tags.
+#
+# A rule matches when all of its `match` words are present. When several
+# rules match, the winner is the one that:
+#   1. explains the most of the point's name tokens;
+#   2. then has the most `match` words;
+#   3. then uses the most unit or object-type signals;
+#   4. then comes first in this file.
+# So `SUP-FAN-STA` is fan status, not just "fan", and `FIR-RAT` (firing
+# rate) beats return air temp, which `rat` alone would mean.
+#
+# Tags are Haystack 4 marker names, checked against the defs bundled in
+# openhay-defs: `discharge`, never `supply`, for air; `leaving`/`entering`
+# for water. Where the name pins one down, the tag set is exactly a
+# Haystack 4 proto (`zone air co2 concentration sensor`, `speed vfd
+# sensor`). Where it can't (`zone air temp occ sp` without cooling or
+# heating), it's the legal tags the name supports, not a guess. The `point` marker is left to the caller. A rule with
+# `tags = []` claims the words but gives no tags: it's for things Haystack
+# 4 has no tag for (a boiler's firing rate), so they don't fall through to
+# a wrong guess.
+#
+# When a result has no function tag (sensor, cmd or sp), the BACnet object
+# type supplies one: inputs give `sensor`, outputs give `cmd`.
+#
+# Site overrides use the same `[[rule]]` tables. A rule with an existing
+# `id` replaces it; a new `id` is added.
+
+# ---------------------------------------------------------------- air temps
+[[rule]]
+id = "discharge-air-temp"
+match = ["discharge", "temp"]
+tags = ["discharge", "air", "temp", "sensor"]
+
+[[rule]]
+id = "supply-air-temp"
+match = ["supply", "temp"]
+tags = ["discharge", "air", "temp", "sensor"]
+
+[[rule]]
+id = "return-air-temp"
+match = ["return", "temp"]
+tags = ["return", "air", "temp", "sensor"]
+
+[[rule]]
+id = "mixed-air-temp"
+match = ["mixed", "temp"]
+tags = ["mixed", "air", "temp", "sensor"]
+
+[[rule]]
+id = "outside-air-temp"
+match = ["outside", "temp"]
+tags = ["outside", "air", "temp", "sensor"]
+
+[[rule]]
+id = "exhaust-air-temp"
+match = ["exhaust", "temp"]
+tags = ["exhaust", "air", "temp", "sensor"]
+
+[[rule]]
+id = "zone-air-temp"
+match = ["zone", "temp"]
+tags = ["zone", "air", "temp", "sensor"]
+
+[[rule]]
+id = "discharge-air-temp-sp"
+match = ["discharge", "temp", "sp"]
+tags = ["discharge", "air", "temp", "sp"]
+
+[[rule]]
+id = "supply-air-temp-sp"
+match = ["supply", "temp", "sp"]
+tags = ["discharge", "air", "temp", "sp"]
+
+[[rule]]
+id = "zone-air-temp-sp"
+match = ["zone", "temp", "sp"]
+tags = ["zone", "air", "temp", "sp"]
+
+[[rule]]
+id = "zone-air-temp-occ-sp"
+match = ["zone", "temp", "sp", "occupied"]
+tags = ["zone", "air", "temp", "occ", "sp"]
+
+[[rule]]
+id = "zone-air-temp-unocc-sp"
+match = ["zone", "temp", "sp", "unoccupied"]
+tags = ["zone", "air", "temp", "unocc", "sp"]
+
+[[rule]]
+id = "zone-air-temp-cooling-sp"
+match = ["zone", "temp", "sp", "cooling"]
+tags = ["zone", "air", "temp", "cooling", "sp"]
+
+[[rule]]
+id = "zone-air-temp-heating-sp"
+match = ["zone", "temp", "sp", "heating"]
+tags = ["zone", "air", "temp", "heating", "sp"]
+
+[[rule]]
+id = "zone-air-temp-occ-cooling-sp"
+match = ["zone", "temp", "sp", "occupied", "cooling"]
+tags = ["zone", "air", "temp", "occ", "cooling", "sp"]
+
+[[rule]]
+id = "zone-air-temp-occ-heating-sp"
+match = ["zone", "temp", "sp", "occupied", "heating"]
+tags = ["zone", "air", "temp", "occ", "heating", "sp"]
+
+[[rule]]
+id = "zone-air-temp-unocc-cooling-sp"
+match = ["zone", "temp", "sp", "unoccupied", "cooling"]
+tags = ["zone", "air", "temp", "unocc", "cooling", "sp"]
+
+[[rule]]
+id = "zone-air-temp-unocc-heating-sp"
+match = ["zone", "temp", "sp", "unoccupied", "heating"]
+tags = ["zone", "air", "temp", "unocc", "heating", "sp"]
+
+# ----------------------------------------------------- humidity, co2, flow
+[[rule]]
+id = "zone-air-humidity"
+match = ["zone", "humidity"]
+tags = ["zone", "air", "humidity", "sensor"]
+
+[[rule]]
+id = "outside-air-humidity"
+match = ["outside", "humidity"]
+tags = ["outside", "air", "humidity", "sensor"]
+
+[[rule]]
+id = "return-air-humidity"
+match = ["return", "humidity"]
+tags = ["return", "air", "humidity", "sensor"]
+
+[[rule]]
+id = "air-humidity"
+match = ["humidity"]
+tags = ["air", "humidity", "sensor"]
+
+[[rule]]
+id = "zone-co2"
+match = ["zone", "co2"]
+tags = ["zone", "air", "co2", "concentration", "sensor"]
+
+[[rule]]
+id = "co2"
+match = ["co2"]
+tags = ["zone", "air", "co2", "concentration", "sensor"]
+
+[[rule]]
+id = "air-flow"
+match = ["air", "flow"]
+tags = ["air", "flow", "sensor"]
+
+[[rule]]
+id = "discharge-air-flow"
+match = ["discharge", "air", "flow"]
+tags = ["discharge", "air", "flow", "sensor"]
+
+[[rule]]
+id = "air-flow-sp"
+match = ["air", "flow", "sp"]
+tags = ["air", "flow", "sp"]
+
+# ----------------------------------------------------------------- pressure
+[[rule]]
+id = "static-pressure"
+match = ["static", "pressure"]
+tags = ["discharge", "air", "pressure", "sensor"]
+
+[[rule]]
+id = "static-pressure-sp"
+match = ["static", "pressure", "sp"]
+tags = ["discharge", "air", "pressure", "sp"]
+
+[[rule]]
+id = "zone-air-pressure"
+match = ["zone", "pressure"]
+tags = ["zone", "air", "pressure", "sensor"]
+
+[[rule]]
+id = "air-pressure"
+match = ["air", "pressure"]
+tags = ["air", "pressure", "sensor"]
+
+# --------------------------------------------------------------------- fans
+[[rule]]
+id = "fan-status"
+match = ["fan", "status"]
+tags = ["fan", "run", "sensor"]
+
+[[rule]]
+id = "fan-run"
+match = ["fan", "run"]
+tags = ["fan", "run", "sensor"]
+
+[[rule]]
+id = "fan-cmd"
+match = ["fan", "cmd"]
+tags = ["fan", "run", "cmd"]
+
+[[rule]]
+id = "fan-start-stop"
+match = ["fan", "start"]
+tags = ["fan", "run", "cmd"]
+
+[[rule]]
+id = "supply-fan-status"
+match = ["supply", "fan", "status"]
+tags = ["discharge", "fan", "run", "sensor"]
+
+[[rule]]
+id = "supply-fan-cmd"
+match = ["supply", "fan", "cmd"]
+tags = ["discharge", "fan", "run", "cmd"]
+
+[[rule]]
+id = "return-fan-status"
+match = ["return", "fan", "status"]
+tags = ["return", "fan", "run", "sensor"]
+
+[[rule]]
+id = "return-fan-cmd"
+match = ["return", "fan", "cmd"]
+tags = ["return", "fan", "run", "cmd"]
+
+[[rule]]
+id = "exhaust-fan-status"
+match = ["exhaust", "fan", "status"]
+tags = ["exhaust", "fan", "run", "sensor"]
+
+[[rule]]
+id = "exhaust-fan-cmd"
+match = ["exhaust", "fan", "cmd"]
+tags = ["exhaust", "fan", "run", "cmd"]
+
+[[rule]]
+id = "fan-speed"
+match = ["fan", "speed"]
+tags = ["fan", "speed", "vfd", "sensor"]
+
+[[rule]]
+id = "fan-speed-cmd"
+match = ["fan", "speed", "cmd"]
+tags = ["fan", "speed", "vfd", "cmd"]
+
+# ---------------------------------------------------- dampers and valves
+[[rule]]
+id = "damper"
+match = ["damper"]
+tags = ["damper"]
+
+[[rule]]
+id = "damper-cmd"
+match = ["damper", "cmd"]
+tags = ["damper", "cmd"]
+
+[[rule]]
+id = "damper-position"
+match = ["damper", "position"]
+tags = ["damper", "sensor"]
+
+[[rule]]
+id = "damper-feedback"
+match = ["damper", "feedback"]
+tags = ["damper", "sensor"]
+
+[[rule]]
+id = "outside-damper-cmd"
+match = ["outside", "damper", "cmd"]
+tags = ["outside", "damper", "cmd"]
+
+[[rule]]
+id = "valve"
+match = ["valve"]
+tags = ["valve"]
+
+[[rule]]
+id = "valve-cmd"
+match = ["valve", "cmd"]
+tags = ["valve", "cmd"]
+
+[[rule]]
+id = "valve-position"
+match = ["valve", "position"]
+tags = ["valve", "sensor"]
+
+[[rule]]
+id = "valve-feedback"
+match = ["valve", "feedback"]
+tags = ["valve", "sensor"]
+
+[[rule]]
+id = "cooling-valve-cmd"
+match = ["cooling", "valve", "cmd"]
+tags = ["chilled", "water", "cool", "valve", "cmd"]
+
+[[rule]]
+id = "heating-valve-cmd"
+match = ["heating", "valve", "cmd"]
+tags = ["hot", "water", "heat", "valve", "cmd"]
+
+# -------------------------------------------------------------------- water
+[[rule]]
+id = "chilled-water-supply-temp"
+match = ["chilled", "water", "supply", "temp"]
+tags = ["chilled", "water", "leaving", "temp", "sensor"]
+
+[[rule]]
+id = "chilled-water-leaving-temp"
+match = ["chilled", "water", "leaving", "temp"]
+tags = ["chilled", "water", "leaving", "temp", "sensor"]
+
+[[rule]]
+id = "chilled-water-return-temp"
+match = ["chilled", "water", "return", "temp"]
+tags = ["chilled", "water", "entering", "temp", "sensor"]
+
+[[rule]]
+id = "chilled-water-entering-temp"
+match = ["chilled", "water", "entering", "temp"]
+tags = ["chilled", "water", "entering", "temp", "sensor"]
+
+[[rule]]
+id = "hot-water-supply-temp"
+match = ["hot", "water", "supply", "temp"]
+tags = ["hot", "water", "leaving", "temp", "sensor"]
+
+[[rule]]
+id = "hot-water-leaving-temp"
+match = ["hot", "water", "leaving", "temp"]
+tags = ["hot", "water", "leaving", "temp", "sensor"]
+
+[[rule]]
+id = "hot-water-return-temp"
+match = ["hot", "water", "return", "temp"]
+tags = ["hot", "water", "entering", "temp", "sensor"]
+
+[[rule]]
+id = "hot-water-entering-temp"
+match = ["hot", "water", "entering", "temp"]
+tags = ["hot", "water", "entering", "temp", "sensor"]
+
+[[rule]]
+id = "condenser-water-temp"
+match = ["condenser", "water", "temp"]
+tags = ["condenser", "water", "temp", "sensor"]
+
+[[rule]]
+id = "condenser-water-supply-temp"
+match = ["condenser", "water", "supply", "temp"]
+tags = ["condenser", "water", "leaving", "temp", "sensor"]
+
+[[rule]]
+id = "condenser-water-return-temp"
+match = ["condenser", "water", "return", "temp"]
+tags = ["condenser", "water", "entering", "temp", "sensor"]
+
+[[rule]]
+id = "chilled-water-supply-temp-sp"
+match = ["chilled", "water", "supply", "temp", "sp"]
+tags = ["chilled", "water", "leaving", "temp", "sp"]
+
+[[rule]]
+id = "hot-water-supply-temp-sp"
+match = ["hot", "water", "supply", "temp", "sp"]
+tags = ["hot", "water", "leaving", "temp", "sp"]
+
+[[rule]]
+id = "water-differential-pressure"
+match = ["water", "differential", "pressure"]
+tags = ["water", "delta", "pressure", "sensor"]
+
+# ------------------------------------- run/start for chillers, boilers, pumps
+# A point on a chiller, boiler or pump is "run sensor point" / "run cmd
+# point" under that equip in Haystack 4; the equip type isn't repeated.
+[[rule]]
+id = "run-status"
+match = ["run", "status"]
+tags = ["run", "sensor"]
+
+[[rule]]
+id = "start-cmd"
+match = ["start", "cmd"]
+tags = ["run", "cmd"]
+
+[[rule]]
+id = "chiller-run-status"
+match = ["chiller", "run", "status"]
+tags = ["run", "sensor"]
+
+[[rule]]
+id = "chiller-start-cmd"
+match = ["chiller", "start", "cmd"]
+tags = ["run", "cmd"]
+
+[[rule]]
+id = "boiler-run-status"
+match = ["boiler", "run", "status"]
+tags = ["run", "sensor"]
+
+[[rule]]
+id = "boiler-start-cmd"
+match = ["boiler", "start", "cmd"]
+tags = ["run", "cmd"]
+
+[[rule]]
+id = "pump-run-status"
+match = ["pump", "run", "status"]
+tags = ["run", "sensor"]
+
+[[rule]]
+id = "pump-status"
+match = ["pump", "status"]
+tags = ["run", "sensor"]
+
+[[rule]]
+id = "pump-start-cmd"
+match = ["pump", "start", "cmd"]
+tags = ["run", "cmd"]
+
+[[rule]]
+id = "pump-cmd"
+match = ["pump", "cmd"]
+tags = ["run", "cmd"]
+
+[[rule]]
+id = "pump-speed"
+match = ["pump", "speed"]
+tags = ["speed", "vfd", "sensor"]
+
+[[rule]]
+id = "speed-feedback"
+match = ["speed", "feedback"]
+tags = ["speed", "vfd", "sensor"]
+
+[[rule]]
+id = "speed-cmd"
+match = ["speed", "cmd"]
+tags = ["speed", "vfd", "cmd"]
+
+[[rule]]
+id = "enable-cmd"
+match = ["enable", "cmd"]
+tags = ["enable", "cmd"]
+
+[[rule]]
+id = "boiler-firing-rate"
+match = ["firing", "rate"]
+tags = []
+
+# --------------------------------------------------------------- electrical
+[[rule]]
+id = "elec-power"
+match = ["elec", "power"]
+tags = ["elec", "power", "sensor"]
+
+[[rule]]
+id = "elec-demand"
+match = ["power", "demand"]
+tags = ["elec", "demand", "sensor"]
+
+[[rule]]
+id = "elec-power-input"
+match = ["power", "input"]
+tags = ["elec", "power", "sensor"]
+
+[[rule]]
+id = "elec-energy"
+match = ["elec", "energy"]
+tags = ["elec", "energy", "sensor"]
+
+[[rule]]
+id = "elec-energy-total"
+match = ["energy", "total"]
+tags = ["elec", "energy", "sensor"]
+
+# -------------------------------------------- one word, from units or name
+# Low-specificity fallbacks, so a point named `AI-17` with units of °F
+# still gets something. Any rule naming more than the quantity wins.
+[[rule]]
+id = "temp"
+match = ["temp"]
+tags = ["temp", "sensor"]
+
+[[rule]]
+id = "pressure"
+match = ["pressure"]
+tags = ["pressure", "sensor"]
+
+[[rule]]
+id = "flow"
+match = ["flow"]
+tags = ["flow", "sensor"]

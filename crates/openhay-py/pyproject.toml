@@ -5,10 +5,28 @@ build-backend = "maturin"
 [project]
 name = "openhay"
 description = "Project Haystack 3 + 4 for Python: Zinc, JSON v3, Hayson, Trio, CSV, SCRAM auth and a client - Rust core, no Fantom"
+readme = "README.md"
 license = { text = "BSD-3-Clause" }
 requires-python = ">=3.10"
-classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3"]
+keywords = ["haystack", "project-haystack", "zinc", "hayson", "trio", "building-automation", "bas"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+]
+# zoneinfo has no timezone database of its own on Windows.
+dependencies = ["tzdata; sys_platform == 'win32'"]
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/jacobnash/openhay"
+Source = "https://github.com/jacobnash/openhay"
+Issues = "https://github.com/jacobnash/openhay/issues"
 
 [tool.maturin]
 python-source = "python"

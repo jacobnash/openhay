@@ -142,3 +142,104 @@ impl WatchRegistry {
         self.len() == 0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use libhaystack::val::Value;
+
+    fn r(id: &str) -> Ref {
+        Ref::make(id, None)
+    }
+
+    fn rec(id: &str, v: f64) -> Dict {
+        let mut d = Dict::new();
+        d.insert("id".into(), Value::make_ref(id));
+        d.insert("curVal".into(), Value::make_number(v));
+        d
+    }
+
+    #[test]
+    fn subscribe_dedupes_and_extends() {
+        let w = WatchRegistry::default();
+        let (id, lease) = w
+            .subscribe(None, Some("t"), None, &[r("a"), r("a")])
+            .unwrap();
+        assert_eq!(lease, w.default_lease);
+        assert_eq!(w.ids_for_poll(&id).unwrap().len(), 1);
+        let (same, _) = w
+            .subscribe(Some(&id), None, None, &[r("a"), r("b")])
+            .unwrap();
+        assert_eq!(same, id);
+        assert_eq!(w.ids_for_poll(&id).unwrap().len(), 2);
+        assert!(w.subscribe(Some("w-nope"), None, None, &[]).is_err());
+    }
+
+    #[test]
+    fn memory_is_bounded() {
+        let w = WatchRegistry {
+            max_watches: 2,
+            max_ids: 3,
+            ..WatchRegistry::default()
+        };
+        let (a, _) = w.subscribe(None, None, None, &[]).unwrap();
+        w.subscribe(None, None, None, &[]).unwrap();
+        let err = w.subscribe(None, None, None, &[]).unwrap_err();
+        assert!(err.contains("too many open watches"), "{err}");
+        let err = w
+            .subscribe(Some(&a), None, None, &[r("1"), r("2"), r("3"), r("4")])
+            .unwrap_err();
+        assert!(err.contains("id limit"), "{err}");
+        // Closing one frees its slot.
+        w.unsubscribe(&a, &[], true);
+        assert_eq!(w.len(), 1);
+        assert!(w.subscribe(None, None, None, &[]).is_ok());
+    }
+
+    #[test]
+    fn expired_leases_are_purged() {
+        let w = WatchRegistry::default();
+        let (id, _) = w
+            .subscribe(None, None, Some(Duration::from_millis(1)), &[r("a")])
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(20));
+        assert!(w.ids_for_poll(&id).is_err());
+        assert!(w.is_empty());
+    }
+
+    #[test]
+    fn diff_returns_only_changes_unless_refresh() {
+        let w = WatchRegistry::default();
+        let (id, _) = w.subscribe(None, None, None, &[r("a"), r("b")]).unwrap();
+        let first = w.diff(&id, vec![rec("a", 1.0), rec("b", 2.0)], false);
+        assert_eq!(first.len(), 2, "first poll sends everything");
+        assert!(
+            w.diff(&id, vec![rec("a", 1.0), rec("b", 2.0)], false)
+                .is_empty()
+        );
+        let changed = w.diff(&id, vec![rec("a", 1.0), rec("b", 3.0)], false);
+        assert_eq!(changed, vec![rec("b", 3.0)]);
+        assert_eq!(
+            w.diff(&id, vec![rec("a", 1.0), rec("b", 3.0)], true).len(),
+            2
+        );
+        // Records without an id are skipped; unknown watches get nothing.
+        assert!(w.diff(&id, vec![Dict::new()], true).is_empty());
+        assert!(w.diff("w-nope", vec![rec("a", 1.0)], true).is_empty());
+    }
+
+    #[test]
+    fn unsubscribe_some_ids_forgets_their_snapshot() {
+        let w = WatchRegistry::default();
+        let (id, _) = w.subscribe(None, None, None, &[r("a"), r("b")]).unwrap();
+        w.diff(&id, vec![rec("a", 1.0), rec("b", 2.0)], false);
+        w.unsubscribe(&id, &[r("a")], false);
+        assert_eq!(w.ids_for_poll(&id).unwrap().len(), 1);
+        // Re-adding `a` sends it again on the next poll.
+        w.subscribe(Some(&id), None, None, &[r("a")]).unwrap();
+        assert_eq!(
+            w.diff(&id, vec![rec("a", 1.0), rec("b", 2.0)], false).len(),
+            1
+        );
+    }
+}

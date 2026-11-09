@@ -36,6 +36,7 @@ __all__ = [
     "from_hayson", "to_hayson", "haystack_tz", "Client", "HaystackError", "AuthError",
     "ScramCredentials", "ScramServer", "b64url", "b64url_decode", "parse_auth_header", "random_token",
     "validate_tags", "protos_matching", "nearest_protos", "protos",
+    "tag",
 ]
 
 sniff = _native.sniff
@@ -438,10 +439,29 @@ class Client:
         return g.rows[0] if g.rows else {}
 
     def read(self, filter: str, limit: int | None = None) -> list[dict]:
-        row = {"filter": filter}
-        if limit is not None:
-            row["limit"] = Number(limit)
-        return self.call("read", Grid.from_rows([row])).rows
+        """Every record matching ``filter``, at most ``limit``.
+
+        If the server pages (Baler does: a short page's meta carries
+        ``incomplete``, ``limit`` and ``after``), this follows ``after`` and
+        returns the full set. Against a server that doesn't page (Haxall,
+        SkySpark) it's one plain ``read``, as it always was. Use
+        ``read_page`` for one page and its meta.
+        """
+        return _grid_from_hayson(json.loads(self._c.read(filter, limit))).rows
+
+    def read_page(self, filter: str, limit: int | None = None, after: Any = None) -> Grid:
+        """One page of a read by filter, as a Grid with its meta.
+
+        ``page.meta.get("after")`` is the cursor for the next page (``None``
+        when there are no more); ``incomplete`` says why the page is short
+        and ``limit`` is the page size the server used. Pass ``after`` (the
+        previous page's cursor: a Ref, or an id as ``str``/``@str``) to read
+        on. Without ``after`` the request is a standard Haystack ``read``.
+        """
+        if isinstance(after, str):
+            after = Ref(after.lstrip("@"))
+        after_json = None if after is None else json.dumps(to_hayson(after))
+        return _grid_from_hayson(json.loads(self._c.read_page(filter, limit, after_json)))
 
     def defs(self, op: str = "defs", filter: str | None = None, limit: int | None = None) -> list[dict]:
         """A server's Haystack 4 namespace: ``op`` is defs, libs or filetypes."""
@@ -501,3 +521,8 @@ class Client:
         meta = {"id": ref, "action": action}
         g = Grid.from_rows([args], meta=meta) if args else Grid(meta=meta, cols=[Col("empty")])
         return self.call("invokeAction", g)
+
+
+# openhay-tag (``openhay.tag.tag_point`` and friends), importable as an attribute.
+from . import tag  # noqa: E402
+
