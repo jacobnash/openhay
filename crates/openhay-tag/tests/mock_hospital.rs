@@ -53,7 +53,10 @@ const KINDS: &[(&[&str], &[&str])] = &[
     (&["damper", "cmd"], &["damper", "cmd"]),
     (&["damper", "pos"], &["damper", "sensor"]),
     (&["zone", "airflow"], &["air", "flow", "sensor"]),
-    (&["zone", "co2"], &["zone", "air", "co2", "concentration", "sensor"]),
+    (
+        &["zone", "co2"],
+        &["zone", "air", "co2", "concentration", "sensor"],
+    ),
     (
         &["zone", "humidity"],
         &["zone", "air", "humidity", "sensor"],
