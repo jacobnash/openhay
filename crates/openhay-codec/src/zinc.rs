@@ -145,10 +145,11 @@ fn write_val(out: &mut String, v: &Value) -> crate::Result<()> {
             let val = j.get("val").and_then(|x| x.as_str()).unwrap_or_default();
             let tz = j.get("tz").and_then(|x| x.as_str()).unwrap_or("UTC");
             out.push_str(val);
-            if !(tz == "UTC" && val.ends_with('Z')) {
-                out.push(' ');
-                out.push_str(tz);
-            }
+            // Always the zone name, as haxall writes it ("...Z UTC"): after a
+            // bare "Z" in space-separated tags (grid/column meta, dicts) a
+            // following tag like `U04:05:06` reads as a time zone (fuzz: zinc).
+            out.push(' ');
+            out.push_str(tz);
         }
         Value::Uri(u) => {
             out.push('`');
