@@ -11,7 +11,7 @@ need to talk to real servers and to *be* one.
 |---|---|
 | `openhay-codec` | One `Format` enum covering **Zinc, JSON v3** (SkySpark 3 / older nhaystack prefixed strings), **Hayson** (JSON v4), **Trio** and CSV. Also MIME negotiation and format sniffing. |
 | `openhay-auth` | Haystack auth: `HELLO` → SCRAM-SHA-256 → `BEARER authToken`. Client and server halves, checked against the RFC 7677 test vector. `ScramCredentials::from_salted_password` serves SCRAM straight from existing PBKDF2-SHA256 password hashes, so no password reset is needed. |
-| `openhay-client` | Async client for SkySpark, Haxall, nhaystack or anything else: login, `about`, `read` (filter or ids), `nav`, `hisRead`, `hisWrite`, `pointWrite` (+ priority array), `watchSub`/`Poll`/`Unsub`, `invokeAction`. |
+| `openhay-client` | Async client for SkySpark, Haxall, nhaystack or anything else: login, `about`, `read` (filter or ids; follows a paging server's `after` to the full set, `read_page` for one page and its meta), `nav`, `hisRead`, `hisWrite`, `pointWrite` (+ priority array), `watchSub`/`Poll`/`Unsub`, `invokeAction`. |
 | `openhay-filter` | Haystack filters with the reference semantics: typed comparisons (no matches on missing tags, other kinds or other units), paths through Refs, Ref lists, nested Dicts and DateTime `date`/`time`/`tz`, `^symbol` terms, Xeto spec names, hex/`h:mm` literals and `//` comments. Pluggable `Resolver` for whatever store holds the records. |
 | `openhay-defs` | The official Project Haystack 4.0.0 defs namespace (`ph`, `phScience`, `phIoT`, `phIct`; 719 defs), bundled, plus the `defs`/`libs`/`filetypes` ops and a filter evaluator that knows the namespace (`lib==^lib:phIoT`). |
 | `openhay-server` | Implement one `Backend` trait over your storage and get the whole op surface. It serves both `/api/{op}` (Haxall layout) and `/api/{project}/{op}` (SkySpark layout), with SCRAM auth, content negotiation, Haystack error grids, and **server-managed watches with bounded memory**. `MemBackend` is a complete in-memory implementation. |
@@ -54,6 +54,18 @@ c = oh.Client("https://host/api/demo", user="admin", password="…")   # SCRAM
 c = oh.Client("https://host/api/demo", bearer=access_token)          # OAuth / API key
 for rec in c.read("point and his and equipRef->ahu"):
     his = c.his_read(rec["id"], "yesterday")
+```
+
+`read` returns every match. Haystack has no standard paging, but some servers (e.g. Baler) cut a
+filter read into pages and mark a short page's grid meta with `incomplete`, `limit` and `after`.
+`read` follows `after` until the set is complete, or until `limit` records are in. A server that
+doesn't page (Haxall, SkySpark) gets the same single request as before. To take one page at a
+time and see the meta:
+
+```python
+page = c.read_page("point")                        # oh.Grid
+page.meta.get("after")                              # cursor, or None on the last page
+page = c.read_page("point", after=page.meta["after"])
 ```
 
 Embedding the server:
