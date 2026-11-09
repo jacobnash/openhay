@@ -1,0 +1,56 @@
+# BACnet EngineeringUnits -> Haystack unit symbols (the Haystack unit
+# database's names), moved here from Windrow's bacnet_tagger. Keys are the
+# enum name normalised to lowercase letters and digits, so bacpypes3's
+# `degrees-fahrenheit` and the spec's `degreesFahrenheit` both match.
+[bacnet]
+degreesfahrenheit = "°F"
+degreescelsius = "°C"
+degreeskelvin = "K"
+kelvin = "K"
+deltadegreesfahrenheit = "Δ°F"
+deltadegreeskelvin = "Δ°C"
+percent = "%"
+percentrelativehumidity = "%RH"
+partspermillion = "ppm"
+pascals = "Pa"
+kilopascals = "kPa"
+inchesofwater = "inH₂O"
+poundsforcepersquareinch = "psi"
+cubicfeetperminute = "cfm"
+literspersecond = "L/s"
+cubicmetersperhour = "m³/h"
+feetperminute = "ft/min"
+usgallonsperminute = "gal/min"
+watts = "W"
+kilowatts = "kW"
+kilowatthours = "kWh"
+megawatts = "MW"
+btusperhour = "BTU/h"
+tonsrefrigeration = "tonref"
+amperes = "A"
+volts = "V"
+hertz = "Hz"
+revolutionsperminute = "rpm"
+
+# Haystack unit symbol -> the words it is evidence for. A unit is a
+# signal, not a name: it can complete a rule (`ZN-3` + °F is zone temp)
+# but ranks below the point's own name tokens.
+[signal]
+"°F" = ["temp"]
+"°C" = ["temp"]
+"K" = ["temp"]
+"%RH" = ["humidity"]
+"ppm" = ["co2"]
+"Pa" = ["pressure"]
+"kPa" = ["pressure"]
+"inH₂O" = ["pressure"]
+"psi" = ["pressure"]
+"cfm" = ["air", "flow"]
+"L/s" = ["flow"]
+"m³/h" = ["flow"]
+"gal/min" = ["water", "flow"]
+"kW" = ["elec", "power"]
+"W" = ["elec", "power"]
+"MW" = ["elec", "power"]
+"kWh" = ["elec", "energy"]
+"rpm" = ["speed"]
