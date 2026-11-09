@@ -12,3 +12,7 @@ openhay-codec.workspace = true
 openhay-auth.workspace = true
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots"] }
 thiserror.workspace = true
+
+[dev-dependencies]
+axum = "0.8"
+tokio.workspace = true

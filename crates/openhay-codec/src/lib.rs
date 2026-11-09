@@ -14,12 +14,11 @@
 pub mod csv;
 pub mod hayson;
 pub mod json3;
+pub mod trio;
 pub mod trio_read;
 pub mod zinc;
 pub mod zinc_read;
 
-use libhaystack::encoding::trio::encode::TrioWriter;
-use libhaystack::encoding::zinc::encode::ToZinc;
 pub use libhaystack::val::{Dict, Grid, Value};
 
 #[derive(Debug, thiserror::Error)]
@@ -153,13 +152,7 @@ pub fn encode_grid(format: Format, grid: &Grid) -> Result<String> {
         Format::Zinc => zinc::encode_grid(grid),
         Format::Json3 => Ok(json3::encode_grid(grid).to_string()),
         Format::Hayson => Ok(hayson::encode_grid(grid).to_string()),
-        Format::Trio => {
-            let mut w = TrioWriter::new();
-            for row in &grid.rows {
-                w.add_dict(row.clone());
-            }
-            Ok(w.to_trio_string())
-        }
+        Format::Trio => trio::encode_grid(grid),
         Format::Csv => Ok(csv::encode_grid(grid)),
     }
 }
@@ -171,6 +164,5 @@ pub fn decode_zinc_scalar(text: &str) -> Result<Value> {
 
 /// Encode a single value in Zinc syntax.
 pub fn encode_zinc_scalar(v: &Value) -> Result<String> {
-    v.to_zinc_string()
-        .map_err(|e| CodecError::Zinc(e.to_string()))
+    zinc::encode_value(v)
 }
