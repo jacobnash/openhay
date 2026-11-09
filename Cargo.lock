@@ -889,11 +889,13 @@ dependencies = [
 name = "openhay-client"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "libhaystack",
  "openhay-auth",
  "openhay-codec",
  "reqwest",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
