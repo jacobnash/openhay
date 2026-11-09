@@ -53,7 +53,7 @@ const KINDS: &[(&[&str], &[&str])] = &[
     (&["damper", "cmd"], &["damper", "cmd"]),
     (&["damper", "pos"], &["damper", "sensor"]),
     (&["zone", "airflow"], &["air", "flow", "sensor"]),
-    (&["zone", "co2"], &["zone", "co2", "sensor"]),
+    (&["zone", "co2"], &["zone", "air", "co2", "concentration", "sensor"]),
     (
         &["zone", "humidity"],
         &["zone", "air", "humidity", "sensor"],
@@ -89,7 +89,7 @@ const KINDS: &[(&[&str], &[&str])] = &[
     // pumps
     (&["pump", "run", "status"], &["run", "sensor"]),
     (&["pump", "start", "cmd"], &["run", "cmd"]),
-    (&["pump", "spd", "fdbk"], &["speed", "sensor"]),
+    (&["pump", "spd", "fdbk"], &["speed", "vfd", "sensor"]),
     // meters
     (&["kw", "demand"], &["elec", "demand", "sensor"]),
     (&["kwh", "total"], &["elec", "energy", "sensor"]),

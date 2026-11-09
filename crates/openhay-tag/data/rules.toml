@@ -11,7 +11,10 @@
 #
 # Tags are Haystack 4 marker names, checked against the defs bundled in
 # openhay-defs: `discharge`, never `supply`, for air; `leaving`/`entering`
-# for water. The `point` marker is left to the caller. A rule with
+# for water. Where the name pins one down, the tag set is exactly a
+# Haystack 4 proto (`zone air co2 concentration sensor`, `speed vfd
+# sensor`). Where it can't (`zone air temp occ sp` without cooling or
+# heating), it's the legal tags the name supports, not a guess. The `point` marker is left to the caller. A rule with
 # `tags = []` claims the words but gives no tags: it's for things Haystack
 # 4 has no tag for (a boiler's firing rate), so they don't fall through to
 # a wrong guess.
@@ -137,12 +140,12 @@ tags = ["air", "humidity", "sensor"]
 [[rule]]
 id = "zone-co2"
 match = ["zone", "co2"]
-tags = ["zone", "co2", "sensor"]
+tags = ["zone", "air", "co2", "concentration", "sensor"]
 
 [[rule]]
 id = "co2"
 match = ["co2"]
-tags = ["zone", "co2", "sensor"]
+tags = ["zone", "air", "co2", "concentration", "sensor"]
 
 [[rule]]
 id = "air-flow"
@@ -234,12 +237,12 @@ tags = ["exhaust", "fan", "run", "cmd"]
 [[rule]]
 id = "fan-speed"
 match = ["fan", "speed"]
-tags = ["fan", "speed", "sensor"]
+tags = ["fan", "speed", "vfd", "sensor"]
 
 [[rule]]
 id = "fan-speed-cmd"
 match = ["fan", "speed", "cmd"]
-tags = ["fan", "speed", "cmd"]
+tags = ["fan", "speed", "vfd", "cmd"]
 
 # ---------------------------------------------------- dampers and valves
 [[rule]]
@@ -290,12 +293,12 @@ tags = ["valve", "sensor"]
 [[rule]]
 id = "cooling-valve-cmd"
 match = ["cooling", "valve", "cmd"]
-tags = ["cooling", "valve", "cmd"]
+tags = ["chilled", "water", "cool", "valve", "cmd"]
 
 [[rule]]
 id = "heating-valve-cmd"
 match = ["heating", "valve", "cmd"]
-tags = ["heating", "valve", "cmd"]
+tags = ["hot", "water", "heat", "valve", "cmd"]
 
 # -------------------------------------------------------------------- water
 [[rule]]
@@ -424,17 +427,17 @@ tags = ["run", "cmd"]
 [[rule]]
 id = "pump-speed"
 match = ["pump", "speed"]
-tags = ["speed", "sensor"]
+tags = ["speed", "vfd", "sensor"]
 
 [[rule]]
 id = "speed-feedback"
 match = ["speed", "feedback"]
-tags = ["speed", "sensor"]
+tags = ["speed", "vfd", "sensor"]
 
 [[rule]]
 id = "speed-cmd"
 match = ["speed", "cmd"]
-tags = ["speed", "cmd"]
+tags = ["speed", "vfd", "cmd"]
 
 [[rule]]
 id = "enable-cmd"
