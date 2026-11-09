@@ -35,6 +35,7 @@ __all__ = [
     "decode_grid", "encode_grid", "to_zinc", "from_zinc", "sniff", "negotiate", "mime",
     "from_hayson", "to_hayson", "haystack_tz", "Client", "HaystackError", "AuthError",
     "ScramCredentials", "ScramServer", "b64url", "b64url_decode", "parse_auth_header", "random_token",
+    "validate_tags", "protos_matching", "nearest_protos", "protos",
 ]
 
 sniff = _native.sniff
@@ -343,6 +344,54 @@ def filter_rows(filter: str, rows: Iterable[dict]) -> list[dict]:
         return []
     idx = _native.filter_indices(filter, json.dumps(to_hayson(Grid.from_rows(rows))))
     return [rows[i] for i in idx]
+
+
+def _tags_hayson(tags: Any) -> str:
+    """A tag dict, or an iterable of marker names, as a Hayson dict. A value
+    of ``True`` counts as a marker, as in ``openhay.tag``'s ``{name: True}``."""
+    if isinstance(tags, dict):
+        d = {k: (MARKER if v is True else v) for k, v in tags.items()}
+    else:
+        d = {str(k): MARKER for k in tags}
+    return json.dumps({k: to_hayson(v) for k, v in d.items()})
+
+
+def validate_tags(tags: Any) -> list[dict]:
+    """Check a tag set against the Haystack 4 defs. ``tags`` is a dict
+    (``{"zone": MARKER, ...}``; ``True`` counts as a marker) or marker names.
+
+    Returns problems, errors first, each as ``{"level": "error" | "warning",
+    "kind", "tag", "options", "message"}``. The kinds are:
+
+    - ``unknown_marker`` (error) or ``unknown_tag`` (warning, for value tags)
+    - ``no_entity`` and ``multiple_entities`` (errors: not exactly one of
+      point, equip, site, space, ...)
+    - ``choice_conflict`` (error: e.g. both ``sensor`` and ``cmd``)
+    - ``choice_missing`` (warning: e.g. no pointFunction)
+    - ``no_proto`` (warning: legal, but not a shape the standard defines;
+      ``options`` holds the nearest protos)
+
+    An empty list means the markers are exactly a Haystack 4 proto.
+    """
+    return [{"level": lv, "kind": k, "tag": t, "options": o, "message": m}
+            for lv, k, t, o, m in _native.validate_tags(_tags_hayson(tags))]
+
+
+def protos_matching(tags: Any) -> list[list[str]]:
+    """The Haystack 4 protos the tags fit (every proto tag present), most
+    specific first, each as sorted marker names."""
+    return _native.protos_matching(_tags_hayson(tags))
+
+
+def nearest_protos(tags: Any, n: int = 5) -> list[list[str]]:
+    """The ``n`` protos closest to the tags (fewest markers to add or
+    remove), for suggesting a fix."""
+    return _native.nearest_protos(_tags_hayson(tags), n)
+
+
+def protos() -> list[list[str]]:
+    """Every proto in the bundled Haystack 4 defs, as sorted marker names."""
+    return _native.protos()
 
 
 def to_zinc(value: Any) -> str:

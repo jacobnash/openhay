@@ -7,6 +7,9 @@
 //! assert_eq!(g.rows.len(), 4);
 //! ```
 
+pub mod protos;
+pub mod validate;
+
 use libhaystack::defs::namespace::Namespace;
 use libhaystack::val::{Dict, Grid, Ref, Symbol, Value};
 use std::collections::HashMap;

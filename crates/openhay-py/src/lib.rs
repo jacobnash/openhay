@@ -288,6 +288,61 @@ fn filter_indices(filter: &str, grid_hayson: &str) -> PyResult<Vec<usize>> {
     openhay_defs::filter_indices(filter, &g.rows).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+fn hayson_dict(text: &str) -> PyResult<libhaystack::val::Dict> {
+    match serde_json::from_str::<Value>(text).map_err(|e| PyValueError::new_err(e.to_string()))? {
+        Value::Dict(d) => Ok(d),
+        _ => Err(PyValueError::new_err("tags must be a dict")),
+    }
+}
+
+/// Problems with a Hayson tag dict as a Haystack 4 entity:
+/// `(level, kind, tag, options, message)`, errors first.
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+fn validate_tags(
+    tags_hayson: &str,
+) -> PyResult<
+    Vec<(
+        &'static str,
+        &'static str,
+        Option<String>,
+        Vec<String>,
+        String,
+    )>,
+> {
+    let d = hayson_dict(tags_hayson)?;
+    Ok(openhay_defs::validate::validate(&d)
+        .into_iter()
+        .map(|p| (p.level.as_str(), p.kind, p.tag, p.options, p.message))
+        .collect())
+}
+
+/// Protos (sorted marker lists) the tags fit, most specific first.
+#[pyfunction]
+fn protos_matching(tags_hayson: &str) -> PyResult<Vec<Vec<String>>> {
+    let d = hayson_dict(tags_hayson)?;
+    Ok(openhay_defs::validate::protos_matching(&d)
+        .into_iter()
+        .cloned()
+        .collect())
+}
+
+/// The `n` protos nearest the tags.
+#[pyfunction]
+fn nearest_protos(tags_hayson: &str, n: usize) -> PyResult<Vec<Vec<String>>> {
+    let d = hayson_dict(tags_hayson)?;
+    Ok(openhay_defs::validate::nearest_protos(&d, n)
+        .into_iter()
+        .cloned()
+        .collect())
+}
+
+/// Every Haystack 4 proto, as sorted marker lists.
+#[pyfunction]
+fn protos() -> Vec<Vec<String>> {
+    openhay_defs::protos::all().to_vec()
+}
+
 #[pymodule]
 fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -305,6 +360,10 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_auth_header, m)?)?;
     m.add_function(wrap_pyfunction!(defs_op, m)?)?;
     m.add_function(wrap_pyfunction!(filter_indices, m)?)?;
+    m.add_function(wrap_pyfunction!(validate_tags, m)?)?;
+    m.add_function(wrap_pyfunction!(protos_matching, m)?)?;
+    m.add_function(wrap_pyfunction!(nearest_protos, m)?)?;
+    m.add_function(wrap_pyfunction!(protos, m)?)?;
     m.add_class::<ScramCredentials>()?;
     m.add_class::<ScramServer>()?;
     m.add_class::<NativeClient>()?;
