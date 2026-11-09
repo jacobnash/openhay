@@ -268,6 +268,42 @@ impl NativeClient {
             .map_err(client_err)?;
         openhay_codec::encode_grid(Format::Hayson, &grid).map_err(codec_err)
     }
+
+    /// Read by filter, following a paging server's `after` to the full set
+    /// (at most `limit`). Returns a Hayson grid of the rows.
+    #[pyo3(signature = (filter, limit=None))]
+    fn read(&self, py: Python<'_>, filter: &str, limit: Option<usize>) -> PyResult<String> {
+        let Self { inner, rt } = self;
+        let rows = py
+            .detach(|| rt.block_on(inner.read(filter, limit)))
+            .map_err(client_err)?;
+        openhay_codec::encode_grid(Format::Hayson, &Grid::make_from_dicts(rows)).map_err(codec_err)
+    }
+
+    /// One page of a read by filter. `after_hayson` is the previous page's
+    /// `after` as Hayson JSON. Returns the Hayson grid, meta included.
+    #[pyo3(signature = (filter, limit=None, after_hayson=None))]
+    fn read_page(
+        &self,
+        py: Python<'_>,
+        filter: &str,
+        limit: Option<usize>,
+        after_hayson: Option<&str>,
+    ) -> PyResult<String> {
+        let after: Option<Value> = after_hayson
+            .map(serde_json::from_str)
+            .transpose()
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let Self { inner, rt } = self;
+        let page = py
+            .detach(|| rt.block_on(inner.read_page(filter, limit, after.as_ref())))
+            .map_err(client_err)?;
+        let mut g = Grid::make_from_dicts(page.rows);
+        if !page.meta.is_empty() {
+            g.meta = Some(page.meta);
+        }
+        openhay_codec::encode_grid(Format::Hayson, &g).map_err(codec_err)
+    }
 }
 
 // ------------------------------------------------------------------ tag

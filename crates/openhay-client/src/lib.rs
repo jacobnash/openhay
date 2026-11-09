@@ -19,6 +19,49 @@ pub enum ClientError {
     /// The server returned a Haystack error grid.
     #[error("server error: {0}")]
     Server(String),
+    /// A paging server handed back a cursor that doesn't move the read on
+    /// (the same `after` again, or an empty page that still has one), so
+    /// following it would loop forever.
+    #[error("paging: {0}")]
+    Paging(String),
+}
+
+/// One page of a `read` by filter: the rows and the response grid's meta.
+///
+/// Haystack has no standard paging. A server that pages (Baler does) marks a
+/// truncated page with `incomplete` (why), `limit` (the page size) and
+/// `after` (a cursor, the id of the last record covered) in the grid meta,
+/// and reads on when the client sends `after` back. A server that doesn't
+/// page (Haxall, SkySpark) never sets `after`, so a page from it is the
+/// whole answer, though it may still say `incomplete` when `limit` cut it
+/// short.
+#[derive(Debug, Clone, Default)]
+pub struct ReadPage {
+    pub rows: Vec<Dict>,
+    /// The response grid's meta; empty if it had none.
+    pub meta: Dict,
+}
+
+impl ReadPage {
+    /// The cursor to send back as `after` for the next page. `None` means
+    /// there are no more pages.
+    pub fn after(&self) -> Option<&Value> {
+        self.meta.get("after").filter(|v| !v.is_null())
+    }
+
+    /// The server's reason the page is short (`incomplete` meta), if any.
+    pub fn incomplete(&self) -> Option<&str> {
+        match self.meta.get("incomplete") {
+            Some(Value::Str(s)) => Some(s.value()),
+            _ => None,
+        }
+    }
+
+    /// True when the page is the whole answer: no `after` and no
+    /// `incomplete`.
+    pub fn is_complete(&self) -> bool {
+        self.after().is_none() && !self.meta.has("incomplete")
+    }
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;
@@ -253,8 +296,66 @@ impl Client {
         self.call("ops", &Grid::make_empty()).await
     }
 
+    /// Read every record matching `filter`, at most `limit` of them.
+    ///
+    /// If the server pages (its grid meta carries `after`), this follows the
+    /// pages and returns the full set, stopping early once `limit` records
+    /// are in. Against a server that doesn't page the request and the result
+    /// are exactly one plain `read`, as before. Use [`Client::read_page`] for
+    /// one page and its meta.
     pub async fn read(&self, filter: &str, limit: Option<usize>) -> Result<Vec<Dict>> {
-        self.filtered("read", Some(filter), limit).await
+        let mut page = self.read_page(filter, limit, None).await?;
+        let mut rows = std::mem::take(&mut page.rows);
+        while let Some(after) = page.after().cloned() {
+            let remaining = match limit {
+                Some(l) if rows.len() >= l => break,
+                Some(l) => Some(l - rows.len()),
+                None => None,
+            };
+            let mut next = self.read_page(filter, remaining, Some(&after)).await?;
+            if next.after() == Some(&after) {
+                return Err(ClientError::Paging(format!(
+                    "server returned the same after cursor twice ({})",
+                    cursor_dis(&after)
+                )));
+            }
+            if next.rows.is_empty() && next.after().is_some() {
+                return Err(ClientError::Paging(
+                    "server returned an empty page with a further after cursor".into(),
+                ));
+            }
+            rows.append(&mut next.rows);
+            page = next;
+        }
+        if let Some(l) = limit {
+            rows.truncate(l);
+        }
+        Ok(rows)
+    }
+
+    /// One page of a read by filter, with its meta. Pass the previous page's
+    /// [`ReadPage::after`] as `after` to read on. With `after` of `None` the
+    /// request is a standard Haystack `read`; `after` itself is an extension
+    /// that servers which don't page ignore.
+    pub async fn read_page(
+        &self,
+        filter: &str,
+        limit: Option<usize>,
+        after: Option<&Value>,
+    ) -> Result<ReadPage> {
+        let mut d = Dict::new();
+        d.insert("filter".into(), Value::make_str(filter));
+        if let Some(l) = limit {
+            d.insert("limit".into(), Value::make_number(l as f64));
+        }
+        if let Some(a) = after {
+            d.insert("after".into(), a.clone());
+        }
+        let g = self.call("read", &Grid::make_from_dicts(vec![d])).await?;
+        Ok(ReadPage {
+            rows: g.rows,
+            meta: g.meta.unwrap_or_default(),
+        })
     }
 
     /// The Haystack 4 namespace ops: `op` is `defs`, `libs` or `filetypes`.
@@ -435,6 +536,14 @@ impl Client {
             g
         };
         self.call("invokeAction", &g).await
+    }
+}
+
+fn cursor_dis(v: &Value) -> String {
+    match v {
+        Value::Ref(r) => format!("@{}", r.value()),
+        Value::Str(s) => s.value().to_string(),
+        other => format!("{other:?}"),
     }
 }
 

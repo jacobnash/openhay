@@ -11,7 +11,7 @@ need to talk to real servers and to *be* one.
 |---|---|
 | `openhay-codec` | One `Format` enum covering **Zinc, JSON v3** (SkySpark 3 / older nhaystack prefixed strings), **Hayson** (JSON v4), **Trio** and CSV. Also MIME negotiation and format sniffing. |
 | `openhay-auth` | Haystack auth: `HELLO` → SCRAM-SHA-256 → `BEARER authToken`. Client and server halves, checked against the RFC 7677 test vector. `ScramCredentials::from_salted_password` serves SCRAM straight from existing PBKDF2-SHA256 password hashes, so no password reset is needed. |
-| `openhay-client` | Async client for SkySpark, Haxall, nhaystack or anything else: login, `about`, `read` (filter or ids), `nav`, `hisRead`, `hisWrite`, `pointWrite` (+ priority array), `watchSub`/`Poll`/`Unsub`, `invokeAction`. |
+| `openhay-client` | Async client for SkySpark, Haxall, nhaystack or anything else: login, `about`, `read` (filter or ids; follows a paging server's `after` to the full set, `read_page` for one page and its meta), `nav`, `hisRead`, `hisWrite`, `pointWrite` (+ priority array), `watchSub`/`Poll`/`Unsub`, `invokeAction`. |
 | `openhay-filter` | Haystack filters with the reference semantics: typed comparisons (no matches on missing tags, other kinds or other units), paths through Refs, Ref lists, nested Dicts and DateTime `date`/`time`/`tz`, `^symbol` terms, Xeto spec names, hex/`h:mm` literals and `//` comments. Pluggable `Resolver` for whatever store holds the records. |
 | `openhay-defs` | The official Project Haystack 4.0.0 defs namespace (`ph`, `phScience`, `phIoT`, `phIct`; 719 defs), bundled, plus the `defs`/`libs`/`filetypes` ops and a filter evaluator that knows the namespace (`lib==^lib:phIoT`). |
 | `openhay-tag` | Messy BAS point names to Haystack 4 tags, deterministically. It has a tokenizer (camelCase and digits: `CHWSupTmp3` is `chw sup tmp 3`), a BAS abbreviation lexicon (`SAT`, `ZN-T`, `stpt`, `fdbk`), units and BACnet object types as evidence, and a most-specific rule matcher that returns the rule id and matched tokens as provenance. The lexicon, rules and BACnet-to-Haystack unit table are plain TOML (`crates/openhay-tag/data/`), with per-site overrides. |
@@ -42,7 +42,8 @@ On the client, use `Client::login(user, pw)` for SCRAM or `Client::with_bearer(t
 ### Python
 
 ```bash
-pip install maturin && (cd crates/openhay-py && maturin develop)
+pip install openhay        # once the first release is on PyPI: abi3 wheels, no Rust needed
+pip install maturin && (cd crates/openhay-py && maturin develop)   # from a checkout
 ```
 
 ```python
@@ -55,6 +56,18 @@ c = oh.Client("https://host/api/demo", user="admin", password="…")   # SCRAM
 c = oh.Client("https://host/api/demo", bearer=access_token)          # OAuth / API key
 for rec in c.read("point and his and equipRef->ahu"):
     his = c.his_read(rec["id"], "yesterday")
+```
+
+`read` returns every match. Haystack has no standard paging, but some servers (e.g. Baler) cut a
+filter read into pages and mark a short page's grid meta with `incomplete`, `limit` and `after`.
+`read` follows `after` until the set is complete, or until `limit` records are in. A server that
+doesn't page (Haxall, SkySpark) gets the same single request as before. To take one page at a
+time and see the meta:
+
+```python
+page = c.read_page("point")                        # oh.Grid
+page.meta.get("after")                              # cursor, or None on the last page
+page = c.read_page("point", after=page.meta["after"])
 ```
 
 Embedding the server:
@@ -97,6 +110,28 @@ The Zinc and Trio readers and the filter engine are openhay's own. libhaystack's
 clamped large exponents to `i64::MAX`, dropped rows after nested grids, truncated unquoted Trio
 values (`13 main st` became `13`) and compared missing tags and mixed kinds. libhaystack still
 provides the value types, units and the Hayson/Zinc scalar writers we haven't replaced.
+
+## Testing
+
+CI (`.github/workflows/ci.yml`) runs on every PR and on `main`:
+
+- **rust**: `cargo fmt --check`, `cargo clippy -D warnings` and `cargo test`. The tests include property tests (`crates/openhay-codec/tests/prop.rs`): random grids of every value kind must round-trip through Zinc, Hayson, JSON v3 and Trio. Run a longer soak with `PROPTEST_CASES=5000 cargo test -p openhay-codec --test prop`.
+- **python**: builds the abi3 wheel with maturin and runs `pytest crates/openhay-py/tests` against `hay serve`, plus the phable interop tests.
+- **fuzz**: [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) targets for the Zinc, Trio, JSON v3 and Hayson decoders, Zinc scalars and the filter parser. Each runs for 40 s, seeded from haxall's test cases. A decoded grid must never panic and must re-encode to something that decodes again. Locally:
+
+```bash
+cargo install cargo-fuzz && rustup toolchain install nightly
+python3 fuzz/seed_corpus.py
+cargo +nightly fuzz run zinc fuzz/corpus/zinc -- -max_total_time=600
+```
+
+## Releasing
+
+1. Bump `version` under `[workspace.package]` in `Cargo.toml`. Every crate and the Python wheel take their version from it.
+2. Merge, then tag that commit: `git tag v0.2.0 && git push origin v0.2.0`.
+3. `.github/workflows/release.yml` builds abi3 wheels for Linux (x86_64 and aarch64, manylinux_2_28), macOS (arm64 and x86_64) and Windows (x64), plus an sdist. It tests every wheel on its own platform without Rust, publishes to PyPI with Trusted Publishing, and attaches the files to a GitHub release. The job stops if the tag and the `Cargo.toml` version differ.
+
+A PR that changes the packaging runs the build and test jobs without publishing.
 
 ## Known limitations
 
