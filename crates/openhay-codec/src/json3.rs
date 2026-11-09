@@ -242,6 +242,9 @@ fn decode_str(st: &str) -> Result<Value> {
             let (lat, lng) = body.split_once(',').ok_or_else(|| bad("coord"))?;
             let lat: f64 = lat.trim().parse().map_err(|_| bad("coord"))?;
             let lng: f64 = lng.trim().parse().map_err(|_| bad("coord"))?;
+            if !lat.is_finite() || !lng.is_finite() {
+                return Err(bad("coord"));
+            }
             Value::make_coord(Coord::make(lat, lng))
         }
         b'x' => {

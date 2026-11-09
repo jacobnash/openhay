@@ -499,6 +499,11 @@ impl Parser {
                 let lng = self.plain_number()?;
                 self.skip_ws();
                 self.expect(')')?;
+                // `1e400` parses to infinity: no writer can say that back
+                // inside C(..), so it isn't a coordinate (fuzz: trio)
+                if !lat.is_finite() || !lng.is_finite() {
+                    return Err(self.err("coord out of range"));
+                }
                 return Ok(Coord::make(lat, lng).into());
             }
             if word == "Bin" {
