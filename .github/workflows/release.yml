@@ -1,0 +1,166 @@
+name: Release
+
+# Pushing a `vX.Y.Z` tag builds the abi3 wheels and the sdist, tests every
+# wheel on its own platform with no Rust toolchain, then publishes to PyPI
+# (Trusted Publishing, no token) and attaches the files to a GitHub release.
+#
+# A PR that touches the packaging runs the build and test jobs only, so the
+# matrix is proven before a tag ever needs it. Nothing is published then.
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - crates/openhay-py/**
+      - Cargo.toml
+      - Cargo.lock
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  MANIFEST: crates/openhay-py/Cargo.toml
+
+jobs:
+  # The tag, the workspace version (Cargo.toml) and so the wheel version
+  # must agree, or the release stops here.
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches the workspace version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v=$(python3 -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])")
+          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME but Cargo.toml says $v"
+            exit 1
+          fi
+
+  wheels:
+    needs: version
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux-x86_64, os: ubuntu-latest, target: x86_64, manylinux: "2_28" }
+          - { name: linux-aarch64, os: ubuntu-24.04-arm, target: aarch64, manylinux: "2_28" }
+          - { name: macos-arm64, os: macos-14, target: aarch64-apple-darwin }
+          - { name: macos-x86_64, os: macos-14, target: x86_64-apple-darwin }
+          - { name: windows-x64, os: windows-latest, target: x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux || 'auto' }}
+          args: --release --locked --out dist -m ${{ env.MANIFEST }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.name }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  sdist:
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist -m ${{ env.MANIFEST }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  # Install each wheel where it will run, from the built file only, and run
+  # the Python suite. There's no Rust here, which is the point: `pip install
+  # openhay` must work without it. Tests that need the `hay` binary skip.
+  test:
+    needs: wheels
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { wheel: linux-x86_64, os: ubuntu-latest, python: "3.10" }
+          - { wheel: linux-x86_64, os: ubuntu-latest, python: "3.13" }
+          - { wheel: linux-aarch64, os: ubuntu-24.04-arm, python: "3.12" }
+          - { wheel: macos-arm64, os: macos-14, python: "3.12" }
+          - { wheel: macos-x86_64, os: macos-15-intel, python: "3.12" }
+          - { wheel: windows-x64, os: windows-latest, python: "3.12" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: crates/openhay-py/tests
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-${{ matrix.wheel }}
+          path: dist
+      - name: Install the wheel (binary only, no source fallback)
+        shell: bash
+        run: |
+          python -m pip install --only-binary :all: --find-links dist openhay pytest
+          if command -v cargo >/dev/null; then echo "(cargo is on PATH but unused: --only-binary)"; fi
+      - name: Package data is present
+        run: python -c "import openhay as oh, openhay.vectors; print(oh.__version__, len(oh.defs('libs')), 'libs')"
+      - run: python -m pytest crates/openhay-py/tests -ra
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, sdist]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Trusted Publishing: PyPI trusts this repo + workflow + environment, so
+    # no API token is stored. The environment can also require a manual
+    # approval before anything is uploaded.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/openhay
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, sdist]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes

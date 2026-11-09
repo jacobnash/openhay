@@ -41,7 +41,8 @@ On the client, use `Client::login(user, pw)` for SCRAM or `Client::with_bearer(t
 ### Python
 
 ```bash
-pip install maturin && (cd crates/openhay-py && maturin develop)
+pip install openhay        # once the first release is on PyPI: abi3 wheels, no Rust needed
+pip install maturin && (cd crates/openhay-py && maturin develop)   # from a checkout
 ```
 
 ```python
@@ -96,6 +97,14 @@ The Zinc and Trio readers and the filter engine are openhay's own. libhaystack's
 clamped large exponents to `i64::MAX`, dropped rows after nested grids, truncated unquoted Trio
 values (`13 main st` became `13`) and compared missing tags and mixed kinds. libhaystack still
 provides the value types, units and the Hayson/Zinc scalar writers we haven't replaced.
+
+## Releasing
+
+1. Bump `version` under `[workspace.package]` in `Cargo.toml`. Every crate and the Python wheel take their version from it.
+2. Merge, then tag that commit: `git tag v0.2.0 && git push origin v0.2.0`.
+3. `.github/workflows/release.yml` builds abi3 wheels for Linux (x86_64 and aarch64, manylinux_2_28), macOS (arm64 and x86_64) and Windows (x64), plus an sdist. It tests every wheel on its own platform without Rust, publishes to PyPI with Trusted Publishing, and attaches the files to a GitHub release. The job stops if the tag and the `Cargo.toml` version differ.
+
+A PR that changes the packaging runs the build and test jobs without publishing.
 
 ## Known limitations
 
