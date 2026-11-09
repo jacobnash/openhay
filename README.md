@@ -41,7 +41,8 @@ On the client, use `Client::login(user, pw)` for SCRAM or `Client::with_bearer(t
 ### Python
 
 ```bash
-pip install maturin && (cd crates/openhay-py && maturin develop)
+pip install openhay        # once the first release is on PyPI: abi3 wheels, no Rust needed
+pip install maturin && (cd crates/openhay-py && maturin develop)   # from a checkout
 ```
 
 ```python
@@ -122,6 +123,14 @@ cargo install cargo-fuzz && rustup toolchain install nightly
 python3 fuzz/seed_corpus.py
 cargo +nightly fuzz run zinc fuzz/corpus/zinc -- -max_total_time=600
 ```
+
+## Releasing
+
+1. Bump `version` under `[workspace.package]` in `Cargo.toml`. Every crate and the Python wheel take their version from it.
+2. Merge, then tag that commit: `git tag v0.2.0 && git push origin v0.2.0`.
+3. `.github/workflows/release.yml` builds abi3 wheels for Linux (x86_64 and aarch64, manylinux_2_28), macOS (arm64 and x86_64) and Windows (x64), plus an sdist. It tests every wheel on its own platform without Rust, publishes to PyPI with Trusted Publishing, and attaches the files to a GitHub release. The job stops if the tag and the `Cargo.toml` version differ.
+
+A PR that changes the packaging runs the build and test jobs without publishing.
 
 ## Known limitations
 
