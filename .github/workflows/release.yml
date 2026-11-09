@@ -52,21 +52,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: linux-x86_64, os: ubuntu-24.04, target: x86_64, manylinux: "2_28" }
-          - { name: linux-aarch64, os: ubuntu-24.04-arm, target: aarch64, manylinux: "2_28" }
+          - { name: linux-x86_64, os: ubuntu-24.04, image: quay.io/pypa/manylinux_2_28_x86_64 }
+          - { name: linux-aarch64, os: ubuntu-24.04-arm, image: quay.io/pypa/manylinux_2_28_aarch64 }
           - { name: macos-arm64, os: macos-latest, target: aarch64-apple-darwin }
           - { name: macos-x86_64, os: macos-latest, target: x86_64-apple-darwin }
           - { name: windows-x64, os: windows-latest, target: x64 }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      # Linux: build natively inside the official manylinux_2_28 image, with
+      # maturin from PyPI and Rust from rustup. (maturin-action's in-container
+      # download of its own maturin binary kept failing for x86_64.)
+      - name: Build (manylinux_2_28)
+        if: matrix.image
+        run: |
+          docker run --rm -v "$PWD":/io -w /io ${{ matrix.image }} bash -euc '
+            curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+            . "$HOME/.cargo/env"
+            PY=/opt/python/cp312-cp312/bin
+            $PY/pip install --quiet "maturin>=1.5,<2"
+            $PY/maturin build --release --locked --out dist -m ${{ env.MANIFEST }} --compatibility manylinux_2_28
+            chown -R '"$(id -u):$(id -g)"' dist'
       - uses: actions/setup-python@v5
+        if: ${{ !matrix.image }}
         with:
           python-version: "3.12"
       - uses: PyO3/maturin-action@v1
+        if: ${{ !matrix.image }}
         with:
           target: ${{ matrix.target }}
-          manylinux: ${{ matrix.manylinux || 'auto' }}
           args: --release --locked --out dist -m ${{ env.MANIFEST }}
       - uses: actions/upload-artifact@v4
         with:
