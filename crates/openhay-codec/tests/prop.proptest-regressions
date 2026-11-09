@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc ee5f09d06f612c996bf1a8568ecd1fa76aba1aaa2f61646e217ae0f8a9fdf5b8 # shrinks to g = Grid { meta: None, columns: [Column { name: "a", meta: None }], rows: [Dict { entries: HybridMap { repr: Small([("a", List([XStr(XStr { type: "A", value: "\\" })]))]), small_max_entries: 32 } }], ver: "3.0" }
+cc 6b8b0f744537330d12d3e842947788b291f1cb021df0d2b2ef4678c58afbad2b # shrinks to g = Grid { meta: None, columns: [Column { name: "a", meta: None }], rows: [Dict { entries: HybridMap { repr: Small([("a", List([Number(Number { value: -917144.4107440113, unit: None })]))]), small_max_entries: 32 } }], ver: "3.0" }

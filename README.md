@@ -97,6 +97,20 @@ clamped large exponents to `i64::MAX`, dropped rows after nested grids, truncate
 values (`13 main st` became `13`) and compared missing tags and mixed kinds. libhaystack still
 provides the value types, units and the Hayson/Zinc scalar writers we haven't replaced.
 
+## Testing
+
+CI (`.github/workflows/ci.yml`) runs on every PR and on `main`:
+
+- **rust**: `cargo fmt --check`, `cargo clippy -D warnings` and `cargo test`. The tests include property tests (`crates/openhay-codec/tests/prop.rs`): random grids of every value kind must round-trip through Zinc, Hayson, JSON v3 and Trio. Run a longer soak with `PROPTEST_CASES=5000 cargo test -p openhay-codec --test prop`.
+- **python**: builds the abi3 wheel with maturin and runs `pytest crates/openhay-py/tests` against `hay serve`, plus the phable interop tests.
+- **fuzz**: [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) targets for the Zinc, Trio, JSON v3 and Hayson decoders, Zinc scalars and the filter parser. Each runs for 40 s, seeded from haxall's test cases. A decoded grid must never panic and must re-encode to something that decodes again. Locally:
+
+```bash
+cargo install cargo-fuzz && rustup toolchain install nightly
+python3 fuzz/seed_corpus.py
+cargo +nightly fuzz run zinc fuzz/corpus/zinc -- -max_total_time=600
+```
+
 ## Known limitations
 
 - Numbers whose unit isn't in the Haystack unit database lose the unit on decode. `libhaystack::Number`

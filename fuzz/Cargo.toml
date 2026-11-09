@@ -1,0 +1,64 @@
+[package]
+name = "openhay-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "BSD-3-Clause"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+libhaystack = { version = "4.1", default-features = false, features = ["encoders", "filter", "timezone", "units", "units-db"] }
+openhay-codec = { path = "../crates/openhay-codec" }
+openhay-filter = { path = "../crates/openhay-filter" }
+
+# Not part of the main workspace: cargo-fuzz builds it with nightly and
+# sanitizer flags of its own.
+[workspace]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "zinc"
+path = "fuzz_targets/zinc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "trio"
+path = "fuzz_targets/trio.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json3"
+path = "fuzz_targets/json3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hayson"
+path = "fuzz_targets/hayson.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "zinc_scalar"
+path = "fuzz_targets/zinc_scalar.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "filter"
+path = "fuzz_targets/filter.rs"
+test = false
+doc = false
+bench = false

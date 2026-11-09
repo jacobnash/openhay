@@ -5,24 +5,41 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push to the same branch or PR supersedes the running checks.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
 jobs:
   rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       # Runners ship rustup; add the two components the gate below needs.
       - run: rustup component add rustfmt clippy
+      - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
+      # The fuzz crate is outside the workspace (nightly + sanitizers), so
+      # `--all` doesn't reach it.
+      - run: cargo fmt --manifest-path fuzz/Cargo.toml --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      # Includes the codec property tests (tests/prop.rs) at 256 cases each.
       - run: cargo test --workspace
 
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: Swatinem/rust-cache@v2
       - run: pip install "maturin>=1.5,<2" pytest phable
       # The wheel under test, built the way users get it (abi3, release).
       - run: maturin build --release -m crates/openhay-py/Cargo.toml --out dist
@@ -30,3 +47,36 @@ jobs:
       # `hay serve` is the live server the Python and phable interop tests run against.
       - run: cargo build -p hay-cli
       - run: pytest crates/openhay-py/tests -ra
+
+  # Every decoder and the filter parser under libFuzzer for a short burst,
+  # seeded from haxall's own test cases. Long soaks are a local job:
+  #   cargo +nightly fuzz run zinc -- -max_total_time=600
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FUZZ_SECONDS: "40"
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fuzz
+      - run: python3 fuzz/seed_corpus.py
+      - run: cargo +nightly fuzz build
+      - name: Fuzz each target
+        run: |
+          for t in $(cargo +nightly fuzz list); do
+            echo "::group::$t"
+            cargo +nightly fuzz run "$t" "fuzz/corpus/$t" -- \
+              -max_total_time="$FUZZ_SECONDS" -max_len=4096 -rss_limit_mb=2048
+            echo "::endgroup::"
+          done
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts

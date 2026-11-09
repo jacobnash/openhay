@@ -226,6 +226,7 @@ impl Parser {
             if self.eof() || (nested && self.at_nested_end()) {
                 break;
             }
+            let row_start = self.i;
             let mut row = Dict::new();
             for (ci, col) in columns.iter().enumerate() {
                 if ci > 0 {
@@ -254,6 +255,12 @@ impl Parser {
                 return Err(self.err(&format!("unexpected '{}' in row", self.cur())));
             }
             self.end_line();
+            // A character the row loop can't consume (a literal NUL, which
+            // `cur()` can't tell from end of input) would otherwise repeat
+            // this row forever, growing `rows` until memory runs out.
+            if self.i == row_start {
+                return Err(self.err(&format!("unexpected {:?} in row", self.cur())));
+            }
             rows.push(row);
         }
 
@@ -738,5 +745,13 @@ mod tests {
     fn errors() {
         assert!(read_grid("ver:\"3.0\"\nfoo\n@\n").is_err());
         assert!(read_grid("ver:\"1.0\"\nfoo\n1\n").is_err());
+    }
+
+    #[test]
+    fn literal_nul_in_a_row_is_an_error_not_a_loop() {
+        // Found by the `zinc` fuzz target: this used to allocate until OOM.
+        let z = "ver:\"3.0\"\ncol1,col2\n<<\nver:\"3.0\"\nx\n\0,y\n4,6\n\n>>,1\n";
+        assert!(read_grid(z).is_err());
+        assert!(read_grid("ver:\"3.0\"\na\n\0\n").is_err());
     }
 }
