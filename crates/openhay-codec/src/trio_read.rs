@@ -101,7 +101,9 @@ impl<'a> Reader<'a> {
     fn indented_text(&mut self) -> String {
         let mut block: Vec<&str> = Vec::new();
         while let Some(line) = self.lines.get(self.i).copied() {
-            if line.chars().count() > 1 && !line.starts_with(char::is_whitespace) {
+            // Any line starting in column 0 ends the block, including a
+            // one-letter marker tag (`z`), which used to be swallowed.
+            if !line.is_empty() && !line.starts_with(char::is_whitespace) {
                 break;
             }
             self.i += 1;
@@ -240,5 +242,16 @@ mod tests {
     fn records_and_comments() {
         let v = read_dicts("// header\na\n---\nb: 1\n---\n").unwrap();
         assert_eq!(v.len(), 2);
+    }
+
+    #[test]
+    fn one_letter_tag_ends_an_indented_block() {
+        // Found by the `trio` fuzz target.
+        let d = one("g:Zinc:\n  [1,2]\nz\ny:1");
+        assert_eq!(d.get("z"), Some(&Value::make_marker()));
+        assert!(matches!(d.get("g"), Some(Value::List(_))));
+        let d = one("doc:\n  hello\nz");
+        assert_eq!(d.get("doc"), Some(&Value::make_str("hello")));
+        assert!(d.contains_key("z"));
     }
 }

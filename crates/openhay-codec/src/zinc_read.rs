@@ -56,10 +56,16 @@ pub fn read_tags(text: &str) -> Result<Dict> {
     Ok(d)
 }
 
+/// How deep lists, dicts and nested grids may go. Each level is a recursive
+/// call, so without a limit a hostile or broken server's `[[[[...` would
+/// overflow the stack (fuzz: zinc_scalar). Haystack data is a few levels deep.
+pub const MAX_DEPTH: usize = 64;
+
 struct Parser {
     s: Vec<char>,
     i: usize,
     line: usize,
+    depth: usize,
 }
 
 fn is_id_start(c: char) -> bool {
@@ -80,6 +86,7 @@ impl Parser {
             s: text.chars().collect(),
             i: 0,
             line: 1,
+            depth: 0,
         }
     }
 
@@ -226,6 +233,7 @@ impl Parser {
             if self.eof() || (nested && self.at_nested_end()) {
                 break;
             }
+            let row_start = self.i;
             let mut row = Dict::new();
             for (ci, col) in columns.iter().enumerate() {
                 if ci > 0 {
@@ -254,6 +262,12 @@ impl Parser {
                 return Err(self.err(&format!("unexpected '{}' in row", self.cur())));
             }
             self.end_line();
+            // A character the row loop can't consume (a literal NUL, which
+            // `cur()` can't tell from end of input) would otherwise repeat
+            // this row forever, growing `rows` until memory runs out.
+            if self.i == row_start {
+                return Err(self.err(&format!("unexpected {:?} in row", self.cur())));
+            }
             rows.push(row);
         }
 
@@ -300,6 +314,20 @@ impl Parser {
     // ------------------------------------------------------------- values
 
     fn val(&mut self) -> Result<Value> {
+        let nests = matches!(self.cur(), '[' | '{') || (self.cur() == '<' && self.peek(1) == '<');
+        if !nests {
+            return self.val_inner();
+        }
+        if self.depth >= MAX_DEPTH {
+            return Err(self.err(&format!("nested more than {MAX_DEPTH} levels deep")));
+        }
+        self.depth += 1;
+        let v = self.val_inner();
+        self.depth -= 1;
+        v
+    }
+
+    fn val_inner(&mut self) -> Result<Value> {
         let c = self.cur();
         match c {
             '<' if self.peek(1) == '<' => {
@@ -492,6 +520,11 @@ impl Parser {
                 let lng = self.plain_number()?;
                 self.skip_ws();
                 self.expect(')')?;
+                // `1e400` parses to infinity: no writer can say that back
+                // inside C(..), so it isn't a coordinate (fuzz: trio)
+                if !lat.is_finite() || !lng.is_finite() {
+                    return Err(self.err("coord out of range"));
+                }
                 return Ok(Coord::make(lat, lng).into());
             }
             if word == "Bin" {
@@ -738,5 +771,13 @@ mod tests {
     fn errors() {
         assert!(read_grid("ver:\"3.0\"\nfoo\n@\n").is_err());
         assert!(read_grid("ver:\"1.0\"\nfoo\n1\n").is_err());
+    }
+
+    #[test]
+    fn literal_nul_in_a_row_is_an_error_not_a_loop() {
+        // Found by the `zinc` fuzz target: this used to allocate until OOM.
+        let z = "ver:\"3.0\"\ncol1,col2\n<<\nver:\"3.0\"\nx\n\0,y\n4,6\n\n>>,1\n";
+        assert!(read_grid(z).is_err());
+        assert!(read_grid("ver:\"3.0\"\na\n\0\n").is_err());
     }
 }
